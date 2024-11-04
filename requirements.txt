@@ -1,8 +1,13 @@
+git+https://github.com/SWivid/F5-TTS.git
+streamlit-audiorecorder
 streamlit==1.39.0
-streamlit-authenticator==0.4.1
+streamlit-authenticator
 langchain==0.3.4
-langchain-openai==0.2.4
+langchain-openai
 pypdf==5.1.0
-faiss-cpu==1.9.0
 gTTS==2.5.3
 asyncio
+openai-whisper
+pydub
+soundfile
+cached-path==1.6.3
