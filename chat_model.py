@@ -14,7 +14,7 @@ class InterViewer:
     def __init__(self, model_name, questions):
         self.model_name = model_name
         self.llm = ChatOllama(
-            model="llama3.2:1b",
+            model=model_name,
             temperature=0.5,
         )
         self.questions = questions

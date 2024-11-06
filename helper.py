@@ -11,7 +11,7 @@ from prompt import question_generator_prompt
 
 
 def generate_questions(
-    resume, role, role_description, must_have_questions, model_name="llama3.2:1b"
+    resume, role, role_description, must_have_questions, model_name="llama3.2:3b"
 ):
 
     question_generator_template = PromptTemplate(

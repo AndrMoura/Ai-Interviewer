@@ -11,25 +11,30 @@ from chat_model import InterViewer
 from datetime import timedelta
 from functools import wraps
 
-INTERVIEW_DURATION = 1 * 60
+INTERVIEW_DURATION = 10 * 60
+
 
 def run_in_thread(func):
     from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         thread = threading.Thread(target=func, args=args, kwargs=kwargs)
         ctx = get_script_run_ctx()
         add_script_run_ctx(thread, ctx)
         thread.start()
+
     return wrapper
 
 
+# FIX THIS - Must end thread when leaving the page
 @run_in_thread
 def countdown_timer(timer_placeholder):
     print("Spawning new thread")
-    while st.session_state.get('remaining_time', INTERVIEW_DURATION) > 0:
-        print("running")
-        elapsed_time = (datetime.datetime.now() - st.session_state.start_time).total_seconds()
+    while st.session_state.get("remaining_time", INTERVIEW_DURATION) > 0:
+        elapsed_time = (
+            datetime.datetime.now() - st.session_state.start_time
+        ).total_seconds()
         st.session_state.remaining_time = max(0, INTERVIEW_DURATION - int(elapsed_time))
 
         timer_placeholder.info(
@@ -37,43 +42,36 @@ def countdown_timer(timer_placeholder):
         )
         if st.session_state.remaining_time <= 0:
             timer_placeholder.warning("⏰ Time's up!")
-            st.session_state.interview_end = True         
-        
+            st.session_state.interview_end = True
+
         time.sleep(1)
     print("Ended")
 
-@st.cache_resource
-def load_TTS(model_name):
-    return AudioToText(model_name)
 
+with st.spinner("Loading your interview..."):
 
-# @st.cache_resource
-# def load_STT(model_name):
-#     return TextToAudio(model_name=model_name, device="cuda:0")
+    @st.cache_resource
+    def load_TTS(model_name):
+        return AudioToText(model_name)
 
+    @st.cache_resource
+    def load_STT():
+        return TextToAudio()
 
-@st.cache_resource
-def load_STT():
-    return TextToAudio()
-
-
-@st.cache_resource
-def load_interviewer(model_name="llama3.2:1b"):
-    if st.session_state.get("interview_questions"):
-        return InterViewer(
-            model_name=model_name, questions=st.session_state.interview_questions
-        )
-    else:
-        print("loading mock guidelines")
-        return InterViewer(model_name=model_name, questions="Hello who are you")
-        # st.switch_page('app.py')
+    @st.cache_resource
+    def load_interviewer(model_name="llama3.2:3b"):
+        if st.session_state.get("questions"):
+            return InterViewer(
+                model_name=model_name, questions=st.session_state.questions
+            )
+        else:
+            print("loading mock guidelines")
+            return InterViewer(model_name=model_name, questions="Hello who are you")
 
 
 tts = load_TTS("small")
-# stt = load_STT("hf://SWivid/F5-TTS/F5TTS_Base/model_1200000.safetensors")
 stt = load_STT()
 interviewer = load_interviewer()
-
 audio_path = "answer_temp.wav"
 audio_ref_path = "sample.wav"
 
@@ -85,23 +83,25 @@ def get_now_date():
 def direct_text_prompt():
     """Render and return the user's input."""
     text_audio = ""
-    
-    if 'audio_recorder_key' not in st.session_state:
-        st.session_state.audio_recorder_key = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+
+    if "audio_recorder_key" not in st.session_state:
+        st.session_state.audio_recorder_key = datetime.datetime.now().strftime(
+            "%Y%m%d_%H%M%S"
+        )
+
     with st.container():
         left, right = st.columns([0.2, 0.8])
         with st.spinner(""):
             with left:
                 pass
             with right:
-                # Workaround - audiorecorder always reruns the PREVIOUS audio. 
+                # Workaround - audiorecorder always reruns the PREVIOUS audio.
                 # We set a key to create another "instance" of the audio recorder
                 text_audio_recorder = audiorecorder(
-                    "", 
-                    "", 
-                    True, 
-                    key=f"audio_recorder_{st.session_state.audio_recorder_key}"
+                    "",
+                    "",
+                    True,
+                    key=f"audio_recorder_{st.session_state.audio_recorder_key}",
                 )
                 if len(text_audio_recorder) > 0:
                     saved_path = tts.save_audio(text_audio_recorder, audio_path)
@@ -120,6 +120,7 @@ def display_message(role, content):
     st.session_state.messages.append(
         {"role": role, "timestamp": time_now, "content": content}
     )
+
 
 def initialize_chat_session():
     if "initial_audio_played" not in st.session_state:
@@ -142,16 +143,16 @@ def initialize_chat_session():
                 st.markdown(content)
 
             if not st.session_state.initial_audio_played:
-                # response = stt.generate_audio_response(
-                #     ai_response=content,
-                #     ref_audio=audio_ref_path,
-                # )
-                # autoplay_audio_from_array(
-                #     response["wave_data"], response["sample_rate"], response["duration"]
-                # )
+                response = stt.generate_audio_response(
+                    ai_response=content,
+                    ref_audio=audio_ref_path,
+                )
+                autoplay_audio_from_array(
+                    response["wave_data"], response["sample_rate"], response["duration"]
+                )
 
                 st.session_state.initial_audio_played = True
-    
+
     else:
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
@@ -168,36 +169,42 @@ def initialize_interview_state():
 
     if "remaining_time" not in st.session_state:
         st.session_state["remaining_time"] = INTERVIEW_DURATION
-        
+
     if "timer_running" not in st.session_state:
-        st.session_state['timer_running'] = False
-    
+        st.session_state["timer_running"] = False
+
     if "interview_end" not in st.session_state:
-        st.session_state['interview_end'] = False
+        st.session_state["interview_end"] = False
 
 
 def reset_state():
     keys_to_clear = [
-        'initial_audio_played',
-        'messages',
-        'start_time',
-        'audio_recorder_key',
+        "initial_audio_played",
+        "messages",
+        "start_time",
+        "audio_recorder_key",
         "timer_running",
-        'interview_end'
+        "interview_end",
     ]
     st.session_state["remaining_time"] = INTERVIEW_DURATION
     for key in keys_to_clear:
         if key in st.session_state:
             del st.session_state[key]
-    
-    st.session_state.audio_recorder_key = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    st.session_state.audio_recorder_key = datetime.datetime.now().strftime(
+        "%Y%m%d_%H%M%S"
+    )
+
 
 def main():
     st.session_state.reset = False
     timer_placeholder = st.empty()
     st.title("Interview in Progress 🎯")
     initialize_interview_state()
-    chat_msgs_container = st.container(height=550, border=False, key='chat_container')
+    timer_placeholder.info(
+        f"⏳ Time remaining: {str(timedelta(seconds=st.session_state.remaining_time))}"
+    )
+    chat_msgs_container = st.container(height=400, border=False, key="chat_container")
 
     with chat_msgs_container:
         initialize_chat_session()
@@ -206,29 +213,29 @@ def main():
     with chat_msgs_container:
         if prompt:
             display_message("user", prompt)
-            # ai_question = interviewer.generate_question(prompt)
-            # response = stt.generate_audio_response(
-            #     ai_response=ai_question,
-            #     ref_audio=audio_ref_path,
-            # )
-            display_message("assistant", "mock question")
-            # autoplay_audio_from_array(
-            #     response["wave_data"], response["sample_rate"], response["duration"]
-            # )
+            ai_question = interviewer.generate_question(prompt)
+            response = stt.generate_audio_response(
+                ai_response=ai_question,
+                ref_audio=audio_ref_path,
+            )
+            display_message("assistant", ai_question)
+            autoplay_audio_from_array(
+                response["wave_data"], response["sample_rate"], response["duration"]
+            )
 
     st.divider()
 
     left, mid, right = st.columns(3)
-    with left:
 
+    with left:
         if left.button(
             "Main menu",
             help="returns to the main page an stops the interview",
             type="secondary",
-            on_click=reset_state
         ):
-            st.session_state.pop("messages")
+            reset_state()
             st.switch_page("app.py")
+
     with mid:
         mid.button(
             icon="🔄",
@@ -241,21 +248,15 @@ def main():
         if right.button(
             "Stop Interview", help="stops the interview for scoring", type="primary"
         ):
-            st.switch_page('pages/evaluation.py')
-    
+            st.switch_page("pages/evaluation.py")
+
     if not st.session_state.timer_running:
         countdown_timer(timer_placeholder)
-        st.session_state.timer_running = True  
-    
-    if st.session_state.interview_end:
-        st.switch_page('pages/evaluation.py')
+        st.session_state.timer_running = True
 
-    timer_placeholder.info(
-            f"⏳ Time remaining: {str(timedelta(seconds=st.session_state.remaining_time))}"
-        )
-    
-    st.button("hey click")
-    st.write(st.session_state)
+    if st.session_state.interview_end:
+        st.switch_page("pages/evaluation.py")
+
 
 if __name__ == "__main__":
     main()

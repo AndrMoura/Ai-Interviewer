@@ -1,4 +1,5 @@
 import yaml
+import datetime
 import streamlit as st
 import streamlit_authenticator as stauth
 from yaml.loader import SafeLoader
@@ -19,6 +20,27 @@ DEBUG = True
 ROLE_CFG = {
     "Data Science": "The Data Scientist will analyze large datasets to provide insights and support data-driven decision-making. This role requires proficiency in machine learning, data mining, and statistical analysis. The candidate should demonstrate strong programming skills in Python, experience with SQL, and the ability to communicate findings clearly. Responsibilities include building predictive models, optimizing data pipelines, and collaborating with cross-functional teams."
 }
+
+INTERVIEW_DURATION = 1 * 60
+
+
+def reset_state():
+    keys_to_clear = [
+        "initial_audio_played",
+        "messages",
+        "start_time",
+        "audio_recorder_key",
+        "timer_running",
+        "interview_end",
+    ]
+    st.session_state["remaining_time"] = INTERVIEW_DURATION
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+
+    st.session_state.audio_recorder_key = datetime.datetime.now().strftime(
+        "%Y%m%d_%H%M%S"
+    )
 
 
 def main():
@@ -71,18 +93,16 @@ def main():
                                 for question in must_have_questions.split("\n")
                             ]
                         )
-                        # questions = generate_questions(
-                        #     resume=resume_text,
-                        #     role=role_option,
-                        #     role_description=role_description,
-                        #     must_have_questions=must_questions,
-                        #     model_name='llama3.1'
-                        # )
-                    questions = "test_questions"
+                        questions = generate_questions(
+                            resume=resume_text,
+                            role=role_option,
+                            role_description=role_description,
+                            must_have_questions=must_questions,
+                            model_name="llama3.2:3b",
+                        )
+                    reset_state()
                     st.session_state["interview_started"] = True
-
-                    if DEBUG:
-                        st.text(questions)
+                    st.session_state["questions"] = questions
 
                     # Redirect to interview page
                     st.switch_page("pages/interview_test.py")

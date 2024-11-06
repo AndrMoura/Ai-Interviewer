@@ -2,6 +2,7 @@ import whisper
 import torchaudio
 import torch
 import tempfile
+import numpy as np
 import soundfile as sf
 
 from pydub import AudioSegment
@@ -25,6 +26,8 @@ class AudioToText:
         """
         print(f"Loading Whisper model: {model_size}")
         self.model = whisper.load_model(model_size)
+        self.sample_rate = 16000
+        self.chunk_length = 30 * self.sample_rate
 
     def save_audio(self, audio_segment: AudioSegment, filename="temp_audio.wav") -> str:
         """
@@ -41,9 +44,33 @@ class AudioToText:
         audio_segment.export(filename, format="wav")
         return filename
 
+    def chunk_audio(self, audio: np.ndarray) -> list:
+        """
+        Split audio into chunks of 30 seconds or less.
+
+        Parameters:
+        audio (np.ndarray): The loaded audio array
+
+        Returns:
+        list: List of audio chunks
+        """
+        audios = []
+
+        if len(audio) <= self.chunk_length:
+            audio = whisper.pad_or_trim(audio)
+            audios.append(audio)
+        else:
+            for i in range(0, len(audio), self.chunk_length):
+                chunk = audio[i : i + self.chunk_length]
+                if len(chunk) < self.chunk_length:
+                    chunk = whisper.pad_or_trim(chunk)
+                audios.append(chunk)
+
+        return audios
+
     def transcribe_audio(self, audio_path: str) -> str:
         """
-        Transcribe audio from a file path to text.
+        Transcribe audio from a file path to text, handling files longer than 30 seconds.
 
         Parameters:
         audio_path (str): The file path to the audio file to transcribe.
@@ -53,12 +80,24 @@ class AudioToText:
         """
         print(f"Loading and processing audio from: {audio_path}")
         audio = whisper.load_audio(audio_path)
-        audio = whisper.pad_or_trim(audio)
 
-        print("Transcribing audio...")
-        result = self.model.transcribe(audio)
+        audio_chunks = self.chunk_audio(audio)
 
-        return result["text"]
+        full_transcript = ""
+        for i, chunk in enumerate(audio_chunks, 1):
+            mel = whisper.log_mel_spectrogram(chunk).to(self.model.device)
+
+            if hasattr(self.model, "transcribe"):
+                result = self.model.transcribe(chunk)
+                chunk_text = result["text"]
+            else:
+                options = whisper.DecodingOptions(fp16=False)
+                result = whisper.decode(self.model, mel, options)
+                chunk_text = result.text
+
+            full_transcript += chunk_text + " "
+
+        return full_transcript.strip()
 
 
 # class TextToAudio:
