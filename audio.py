@@ -1,9 +1,11 @@
 import whisper
 import torchaudio
+import torch
 import tempfile
 import soundfile as sf
 
 from pydub import AudioSegment
+from TTS.api import TTS
 
 from f5_tts.model import DiT
 from f5_tts.infer.utils_infer import (
@@ -59,64 +61,80 @@ class AudioToText:
         return result["text"]
 
 
+# class TextToAudio:
+#     def __init__(self, model_name, device="cuda:0"):
+
+#         self.vocoder = load_vocoder()
+#         self.F5TTS_model_cfg = dict(
+#             dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4
+#         )
+#         self.ema_model = load_model(
+#             DiT, self.F5TTS_model_cfg, str(cached_path(model_name))
+#         )
+
+#     def infer(
+#         self,
+#         ref_audio_orig,
+#         ref_text,
+#         gen_text,
+#         remove_silence,
+#         cross_fade_duration=0.15,
+#         speed=1.0,
+#     ) -> dict:
+#         ref_audio, ref_text = preprocess_ref_audio_text(ref_audio_orig, ref_text)
+#         final_wave, final_sample_rate, _ = infer_process(
+#             ref_audio,
+#             ref_text,
+#             gen_text,
+#             self.ema_model,
+#             self.vocoder,
+#             cross_fade_duration=cross_fade_duration,
+#             speed=speed,
+#         )
+
+#         if remove_silence:
+#             with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
+#                 sf.write(f.name, final_wave, final_sample_rate)
+#                 remove_silence_for_generated_wav(f.name)
+#                 final_wave, _ = torchaudio.load(f.name)
+#             final_wave = final_wave.squeeze().cpu().numpy()
+
+#         audio_duration = len(final_wave) / final_sample_rate
+
+#         return {
+#             "sample_rate": final_sample_rate,
+#             "wave_data": final_wave,
+#             "duration": audio_duration,
+#         }
+
+# def generate_audio_response(
+#     self, ai_response, ref_audio, ref_text, remove_silence=True
+# ):
+#     """Generate TTS audio for AI response"""
+
+#     audio_data = self.infer(
+#         ref_audio,
+#         ref_text,
+#         ai_response,
+#         remove_silence,
+#         cross_fade_duration=0.15,
+#         speed=1.0,
+#     )
+#     return audio_data
+
+
 class TextToAudio:
+    def __init__(self):
 
-    def __init__(self, model_name, device="cuda:0"):
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.tts = TTS("tts_models/en/ljspeech/tacotron2-DDC").to(self.device)
+        self.sample_rate = 24000
 
-        self.vocoder = load_vocoder()
-        self.F5TTS_model_cfg = dict(
-            dim=1024, depth=22, heads=16, ff_mult=2, text_dim=512, conv_layers=4
-        )
-        self.ema_model = load_model(
-            DiT, self.F5TTS_model_cfg, str(cached_path(model_name))
-        )
+    def generate_audio_response(self, ai_response, ref_audio):
 
-    def infer(
-        self,
-        ref_audio_orig,
-        ref_text,
-        gen_text,
-        remove_silence,
-        cross_fade_duration=0.15,
-        speed=1.0,
-    ) -> dict:
-        ref_audio, ref_text = preprocess_ref_audio_text(ref_audio_orig, ref_text)
-        final_wave, final_sample_rate, _ = infer_process(
-            ref_audio,
-            ref_text,
-            gen_text,
-            self.ema_model,
-            self.vocoder,
-            cross_fade_duration=cross_fade_duration,
-            speed=speed,
-        )
-
-        if remove_silence:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-                sf.write(f.name, final_wave, final_sample_rate)
-                remove_silence_for_generated_wav(f.name)
-                final_wave, _ = torchaudio.load(f.name)
-            final_wave = final_wave.squeeze().cpu().numpy()
-
-        audio_duration = len(final_wave) / final_sample_rate
-
+        wav = self.tts.tts(text=ai_response, speaker_wav=ref_audio)
         return {
-            "sample_rate": final_sample_rate,
-            "wave_data": final_wave,
-            "duration": audio_duration,
+            "sample_rate": self.sample_rate,
+            "wave_data": wav,
+            "duration": len(wav) / self.sample_rate,
         }
-
-    def generate_audio_response(
-        self, ai_response, ref_audio, ref_text, remove_silence=True
-    ):
-        """Generate TTS audio for AI response"""
-
-        audio_data = self.infer(
-            ref_audio,
-            ref_text,
-            ai_response,
-            remove_silence,
-            cross_fade_duration=0.15,
-            speed=1.0,
-        )
-        return audio_data

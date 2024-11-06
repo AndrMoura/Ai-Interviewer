@@ -33,7 +33,7 @@ def main():
             st.title("AI InterViewer 💬")
 
             with st.expander("Admin Settings"):
-                st.text_area(
+                must_have_questions = st.text_area(
                     "Custom Question Suggestions (one per line)",
                     key="custom_questions",
                     help="Add custom questions for the interview",
@@ -64,22 +64,28 @@ def main():
             role_description = ROLE_CFG[role_option]
             if st.button("Start Interview"):
                 if upload_type == "Text" and resume_text:
-
                     with st.spinner("Preparing your interview..."):
-                        questions = generate_questions(
-                            resume=resume_text,
-                            role=role_option,
-                            role_description=role_description,
+                        must_questions = "\n".join(
+                            [
+                                "- " + question
+                                for question in must_have_questions.split("\n")
+                            ]
                         )
+                        # questions = generate_questions(
+                        #     resume=resume_text,
+                        #     role=role_option,
+                        #     role_description=role_description,
+                        #     must_have_questions=must_questions,
+                        #     model_name='llama3.1'
+                        # )
+                    questions = "test_questions"
                     st.session_state["interview_started"] = True
-                    st.session_state["interview_questions"] = questions
-                    st.session_state["ongoing_interview"] = False
 
                     if DEBUG:
                         st.text(questions)
 
                     # Redirect to interview page
-                    # st.switch_page("pages/interview.py")
+                    st.switch_page("pages/interview_test.py")
                 else:
                     st.error("Please provide resume text before starting the interview")
 

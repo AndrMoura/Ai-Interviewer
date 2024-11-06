@@ -11,12 +11,17 @@ Prioritize questions that test the candidate's understanding of relevant skills,
 The questions should cover technical knowledge, problem-solving skills. 
 Provide at least one question per section and emphasize important themes.
 
+
+MUST HAVE QUESTIONS:
+{must_have_questions}
+
 Resume:
 {resume_text}
 
 Output:
 - Create a set of 8-10 questions tailored to this resume.
-- Structure questions by category: Technical Skills, Problem Solving, and Career Goals.
+- Start with general questions not specific Technical questions.
+- Structure questions by category: Background questions, Technical questions, and Career Goals.
 """
 
 interviewer_prompt = """
