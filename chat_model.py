@@ -11,7 +11,8 @@ from langchain.memory import ConversationBufferMemory
 
 
 class InterViewer:
-    def __init__(self, model_name, questions):
+    def __init__(self, model_name, questions, name):
+        self.name = name
         self.model_name = model_name
         self.llm = ChatOllama(
             model="llama3.2:1b",
@@ -38,7 +39,7 @@ class InterViewer:
         For the next 10 minutes I will ask you questions regarding your experience for the position role Django Developer. \
         Can you can start by telling me a bit about your background experience?"
 
-    def generate_question(self, user_response: str) -> str:
+    def generate_question(self, user_response: str = "ask me a question") -> str:
         """generate the next interviewer question"""
 
         next_question = self.interviewer.predict(input=user_response)

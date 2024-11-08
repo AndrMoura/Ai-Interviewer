@@ -1,7 +1,5 @@
+test.ipynb
+output.wav
+mic_test.py
+user_transcript.wav
 venv
-__pycache__
-test_interview.py
-note.ipynb
-notebook.ipynb
-audio.wav
-answer_temp.wav

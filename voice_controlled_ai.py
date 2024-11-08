@@ -1,23 +1,20 @@
 import sys
+import qtawesome as qta
 import datetime
-from PyQt5.QtCore import QThread, pyqtSignal, QTimer, Qt
-from PyQt5.QtWidgets import QApplication, QWidget, QStackedWidget, QVBoxLayout, QPushButton, QLabel, QTextEdit, QGroupBox, QRadioButton, QComboBox, QHBoxLayout
-import pyaudio
-import numpy as np
-import wave
-
-
-import torch
-import whisper
 import pyaudio
 import numpy as np
 import wave
 import pygame
+from PyQt5.QtCore import QThread, pyqtSignal, QTimer, Qt
+from PyQt5.QtWidgets import QApplication, QWidget, QStackedWidget, QVBoxLayout, QPushButton, QLabel, QTextEdit, QGroupBox, QRadioButton, QComboBox, QHBoxLayout
+from PyQt5.QtGui import QColor, QPainter
+
+import torch
+import whisper
 
 from TTS.api import TTS
 from chat_model import InterViewer
 from pydub import AudioSegment
-from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
 
 
 
@@ -64,14 +61,14 @@ class AudioToText:
 
 
 class QuestionAudioWorker(QThread):
-    question_generated = pyqtSignal(str)  # Signal to emit the generated question
+    question_generated = pyqtSignal(str)
 
     def __init__(self, interviewer, tts, ref_audio):
         super().__init__()
         self.interviewer = interviewer
         self.tts = tts
         self.ref_audio = ref_audio
-        self.user_answer = ""  # Initialize as empty for the first round
+        self.user_answer = ""
 
     def generate_next_question(self, user_answer=""):
         """Method to reuse the worker for generating the next question."""
@@ -88,12 +85,11 @@ class QuestionAudioWorker(QThread):
         # Generate the audio for the question
         #self.tts.generate_audio_response(ai_question, self.ref_audio)
         
-        # Emit the generated question
         self.question_generated.emit(ai_question)
 
 class MicrophoneThread(QThread):
     transcription_signal = pyqtSignal(str)
-    volume_signal = pyqtSignal(float)  # Signal to send volume levels for visual feedback
+    volume_signal = pyqtSignal(float)
 
     def __init__(self, audio_to_text: AudioToText):
         super().__init__()
@@ -140,9 +136,10 @@ class MicrophoneThread(QThread):
             
             audio_data = np.frombuffer(data, dtype=np.int16)
             volume = np.abs(audio_data).mean()
-            self.volume_signal.emit(volume)  # Emit the volume level for visual feedback
+            self.volume_signal.emit(volume)
 
             if volume > self.silence_threshold:
+                print("Sound detected, recording...")
                 silence_duration = 0
                 frames.append(data)
             else:
@@ -247,7 +244,7 @@ class MultiPageApp(QWidget):
     def create_second_page(self):
         self.second_page_layout = QVBoxLayout()
 
-        # Header setup
+        # header
         header_layout = QHBoxLayout()
         self.timer_label = QLabel("Remaining Time: 10:00", self)
         self.timer_label.setAlignment(Qt.AlignCenter)
@@ -259,13 +256,13 @@ class MultiPageApp(QWidget):
         header_layout.addWidget(self.interviewer_name_label, alignment=Qt.AlignRight)
         self.second_page_layout.addLayout(header_layout)
 
-        # Timer
+        # timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_timer)
         self.remaining_time = 600
         self.timer.start(1000)
 
-        # Transcription display
+        # transcription display
         self.transcription_group_box = QGroupBox("Interview Transcription")
         self.transcription_group_box.setCheckable(True)
         self.transcription_group_box.setChecked(True)
@@ -277,13 +274,16 @@ class MultiPageApp(QWidget):
         self.transcription_group_box.setLayout(transcription_layout)
         self.second_page_layout.addWidget(self.transcription_group_box)
 
-        # Volume visual feedback
-        self.audio_feedback_label = QLabel("🎤", self)
-        self.audio_feedback_label.setAlignment(Qt.AlignCenter)
-        self.audio_feedback_label.setStyleSheet("font-size: 40px; color: gray;")  # Initially muted color
-        self.second_page_layout.addWidget(self.audio_feedback_label)
+        # initialize the microphone icon
+        self.mic_icon = qta.icon('ph.microphone-fill')
 
-        # Footer buttons
+        self.mic_label = QLabel(self)
+        self.mic_label.setAlignment(Qt.AlignCenter)
+        self.mic_label.setPixmap(self.mic_icon.pixmap(40, 40))
+        self.second_page_layout.addWidget(self.mic_label)
+
+
+        # footer buttons
         bottom_layout = QHBoxLayout()
         go_home_button = QPushButton("Back to Home", self)
         go_home_button.clicked.connect(self.show_home_page)
@@ -293,7 +293,7 @@ class MultiPageApp(QWidget):
         bottom_layout.addWidget(end_interview_button)
         self.second_page_layout.addLayout(bottom_layout)
 
-        # Set the layout for the second page
+
         self.second_page.setLayout(self.second_page_layout)
 
 
@@ -312,7 +312,7 @@ class MultiPageApp(QWidget):
         self.timer.start(1000)
 
         # Begin the first question cycle
-        self.question_audio_worker.generate_next_question()  # Start the first question
+        self.question_audio_worker.generate_next_question()
 
     def get_now_date(self):
         return datetime.datetime.now().replace(microsecond=0)
@@ -345,14 +345,23 @@ class MultiPageApp(QWidget):
         self.timer_label.setText(f"Remaining Time: {mins:02}:{secs:02}")
         if self.remaining_time <= 0:
             self.end_interview()
-
-    def update_audio_feedback(self, volume):
-        """Update visual feedback based on the volume detected."""
-        if volume > self.microphone_thread.silence_threshold:
-            self.audio_feedback_label.setStyleSheet("font-size: 40px; color: green;")
-        else:
-            self.audio_feedback_label.setStyleSheet("font-size: 40px; color: gray;")
     
+    def update_audio_feedback(self, volume):
+        """Update the microphone icon color based on the volume detected."""
+        if volume > self.microphone_thread.silence_threshold:
+            icon_color = QColor(0, 255, 0) 
+        else:
+            icon_color = QColor(169, 169, 169)
+        pixmap = self.mic_icon.pixmap(40, 40)
+
+        painter = QPainter(pixmap)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        painter.fillRect(pixmap.rect(), icon_color)
+        painter.end()
+
+        self.mic_label.setPixmap(pixmap)
+        self.mic_label.repaint()
+        
     def end_interview(self):
         self.timer.stop()
         self.transcription_display.append("Interview finished. Thank you!")
