@@ -118,9 +118,8 @@ async def process_interview_data(interviewer: InterViewer, session_id):
         interview = save_interview(interviewer.memory.chat_memory.messages, session_id)
         evaluation = evaluate_interview(interview, role=interviewer.role, role_description=interviewer.role_description)
         interview['evaluation'] = evaluation
-        print('interview', interview)
         save_dict(interview, 'test_data.pkl')
-        
+        rated_interviews_db.append(interview)
         print("Interview data saved and evaluated.")
     except Exception as e:
         print(f"Error during interview processing: {e}")
@@ -279,15 +278,13 @@ async def start_interview(
 
 @app.get("/interviews/")
 async def get_interview_summaries():
-    print("rated_interview", rated_interviews_db)
     summaries = [
         {
             'session_id': interview['session_id'],
-            'preview': interview['messages'][0]['message'][:50]
+            'preview': interview['messages'][0]['message'][:50] if interview['messages'] else 'Empty Interview'
         }
         for interview in rated_interviews_db
     ]
-    print("summaries", summaries)
     return JSONResponse(content=summaries)
 
 @app.get("/interviews/{session_id}")
