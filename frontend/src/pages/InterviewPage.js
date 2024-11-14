@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import config from '../config';
 import { Button } from 'flowbite-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PageSidebar from '../components/PageSidebar';
@@ -51,7 +52,7 @@ const InterviewPage = () => {
     console.log("Deleting session", session_id);
     if (session_id && !isInterviewStarted) {
       try {
-        await fetch(`http://localhost:8000/delete_session/${session_id}`, {
+        await fetch(`${config.API_BASE_URL}/delete_session/${session_id}`, {
           method: 'DELETE',
         });
         console.log(`Session ${session_id} deleted successfully.`);
@@ -89,7 +90,7 @@ const InterviewPage = () => {
       sourceNode.connect(analyserNode.current);
       monitorVolume();
 
-      ws.current = new WebSocket('ws://localhost:8000/ws/audio');
+      ws.current = new WebSocket(`${config.WS_BASE_URL}/audio`);
       ws.current.onopen = () => {
         console.log('WebSocket connected');
         ws.current.send(JSON.stringify({ session_id: session_id }));

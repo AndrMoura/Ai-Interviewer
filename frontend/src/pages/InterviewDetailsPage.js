@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import config from '../config';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminSidebar from '../components/PageSidebar';
 import { Button } from 'flowbite-react';
@@ -11,7 +12,7 @@ const InterviewDetailsPage = () => {
   useEffect(() => {
     const fetchInterviewDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/interviews/${session_id}`);
+        const response = await fetch(`${config.API_BASE_URL}/interviews/${session_id}`);
         const data = await response.json();
         setInterview(data);
       } catch (error) {

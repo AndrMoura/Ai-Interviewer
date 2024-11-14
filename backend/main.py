@@ -318,7 +318,6 @@ async def get_roles():
 @app.delete("/delete_session/{session_id}")
 async def delete_session(session_id: str):
     try:
-        print(session_manager.sessions)
         session_manager.remove_session(session_id)
         return {"message": f"Session {session_id} deleted successfully."}
     except ValueError as e:

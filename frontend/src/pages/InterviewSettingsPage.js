@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import config from '../config';
 import { Button, Checkbox, Select, Textarea, FileInput, Spinner } from 'flowbite-react';
 import { useNavigate,  } from 'react-router-dom';
 import axios from 'axios';
@@ -35,7 +36,7 @@ const InterviewSettingsPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/start-interview', {
+      const response = await fetch(`${config.API_BASE_URL}/start-interview`, {
         method: 'POST',
         body: formData,
       });
@@ -62,7 +63,7 @@ const InterviewSettingsPage = () => {
   };
 
   useEffect(() => {
-    axios.get('http://localhost:8000/roles')
+    axios.get(`${config.API_BASE_URL}/roles`)
       .then(response => {
         setRoles(response.data.roles);
         if (response.data.roles.length > 0) {

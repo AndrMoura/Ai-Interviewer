@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import config from '../config';
 import { Button, Textarea, TextInput } from 'flowbite-react';
 import AdminSidebar from '../components/PageSidebar'; // Import AdminSidebar
 
@@ -10,7 +11,7 @@ const AdminInterviewSettingsPage = () => {
   // Handle form submission
   const handleSaveInterviewSettings = async () => {
     try {
-      const response = await fetch('http://localhost:8000/admin/interview-settings', {
+      const response = await fetch(`${config.API_BASE_URL}/admin/interview-settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, TextInput, Checkbox } from 'flowbite-react';
 import axios from 'axios';
+import config from '../config';
+
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -16,7 +18,7 @@ const LoginPage = () => {
       formData.append('username', username);
       formData.append('password', password);
 
-      const response = await axios.post('http://localhost:8000/login', formData, {
+      const response = await axios.post(`${config.API_BASE_URL}/login`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -24,8 +26,6 @@ const LoginPage = () => {
 
       if (response.status === 200) {
         const { token, role } = response.data;
-        console.log("loggd in token", token)
-        console.log("role", role)
         if (rememberMe) {
           localStorage.setItem('authToken', token);
           localStorage.setItem('userRole', role);
