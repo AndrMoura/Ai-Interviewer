@@ -134,7 +134,7 @@ const InterviewPage = () => {
       return;
     }
 
-    mediaRecorder.current = new MediaRecorder(mediaStream.current, { mimeType: 'audio/ogg; codecs=opus' });
+    mediaRecorder.current = new MediaRecorder(mediaStream.current, { mimeType: 'audio/mp3; codecs=opus' });
     chunks.current = [];
 
     mediaRecorder.current.ondataavailable = (e) => {
@@ -150,7 +150,7 @@ const InterviewPage = () => {
 
     mediaRecorder.current.onstop = () => {
       
-      const fullAudioBlob = new Blob(chunks.current, { type: 'audio/ogg' });
+      const fullAudioBlob = new Blob(chunks.current, { type: 'audio/mp3' });
       setAudioBlob(fullAudioBlob);
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         console.log("media recorder sending data")

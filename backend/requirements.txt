@@ -16,3 +16,5 @@ coqui-tts>=0.24.3
 simpleaudio>=1.0.4
 pydub
 passlib>=1.7.4 
+PyPDF2
+python-multipart==0.0.17

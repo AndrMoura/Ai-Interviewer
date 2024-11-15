@@ -107,7 +107,7 @@ def generate_ogg_response(tts, text, ref_audio, output_path="question.wav") -> i
     tts.generate_audio_response(text, ref_audio=ref_audio, file_path=output_path)
     audio = AudioSegment.from_wav(output_path)
     ogg_audio_buffer = io.BytesIO()
-    audio.export(ogg_audio_buffer, format="ogg")
+    audio.export(ogg_audio_buffer, format="mp3")
     ogg_audio_buffer.seek(0)
     return ogg_audio_buffer
 
