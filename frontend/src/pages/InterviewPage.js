@@ -134,7 +134,7 @@ const InterviewPage = () => {
       return;
     }
 
-    mediaRecorder.current = new MediaRecorder(mediaStream.current, { mimeType: 'audio/mp3; codecs=opus' });
+    mediaRecorder.current = new MediaRecorder(mediaStream.current, { mimeType: 'audio/ogg; codecs=opus' });
     chunks.current = [];
 
     mediaRecorder.current.ondataavailable = (e) => {
@@ -156,8 +156,8 @@ const InterviewPage = () => {
         console.log("media recorder sending data")
         ws.current.send(JSON.stringify({ endOfMessage: true }));
       }
-      setIsListening(false);  // Indicate we’re waiting for a response
-      stopListening();  // Stop listening while awaiting response
+      setIsListening(false);
+      stopListening();
     };
 
     console.log("Starting recording...");
@@ -232,6 +232,12 @@ const InterviewPage = () => {
       audio.play().catch((err) => {
         console.error('Error playing base64 audio:', err);
       });
+
+      audio.onended = () => {
+        console.log("Audio playback finished, re-enabling listening");
+        setIsListening(true);
+        startListening();
+      };
     }
   }
 
@@ -256,7 +262,6 @@ const InterviewPage = () => {
   const handleStartInterview = () => {
     setIsInterviewStarted(true);
     playBase64Audio();
-    startListening()
   };
 
   const endInterview = () => {

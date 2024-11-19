@@ -22,7 +22,7 @@ const InterviewSettingsPage = () => {
   const handleStartInterview = async () => {
     const formData = new FormData();
     formData.append('role', role);
-    formData.append('roleDescription', jobDescription);
+    formData.append('role_description', jobDescription);
   
     if (!isPdf && portfolio.trim() !== '') {
       formData.append('portfolio_text', portfolio);
@@ -63,13 +63,13 @@ const InterviewSettingsPage = () => {
   };
 
   useEffect(() => {
-    axios.get(`${config.API_BASE_URL}/roles`)
+    axios.get(`${config.API_BASE_URL}/admin/roles`)
       .then(response => {
         setRoles(response.data.roles);
         if (response.data.roles.length > 0) {
           const firstRole = response.data.roles[0];
           setRole(firstRole.role);
-          setJobDescription(firstRole.jobDescription);
+          setJobDescription(firstRole.job_description);
         }
       })
       .catch(error => {
@@ -81,7 +81,7 @@ const InterviewSettingsPage = () => {
     const selectedRole = e.target.value;
     setRole(selectedRole);
 
-    const selectedRoleDescription = roles.find(r => r.role === selectedRole)?.jobDescription || '';
+    const selectedRoleDescription = roles.find(r => r.role === selectedRole)?.job_description || '';
     setJobDescription(selectedRoleDescription);
   };
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sidebar } from 'flowbite-react';
-import { HiChartPie, HiArrowSmRight, HiLogout, HiDocumentText } from 'react-icons/hi';
+import { HiUserAdd, HiArrowSmRight, HiLogout, HiDocumentText, HiOutlineClipboardList } from 'react-icons/hi';
 import { useAuth } from '../hooks/useAuth';
 
 const PageSidebar = () => {
@@ -25,15 +25,19 @@ const PageSidebar = () => {
 
           {user?.role === 'admin' && (
             <>
-              <Sidebar.Item as={Link} to="/admin/create-interview" icon={HiChartPie}>
-                Create Interview
+              <Sidebar.Item as={Link} to="/admin/create-role" icon={HiUserAdd}>
+              Create Role
               </Sidebar.Item>
 
-              {/* Rated Interviews Button */}
+              <Sidebar.Item as={Link} to="/admin/roles" icon={HiOutlineClipboardList}>
+                Roles
+              </Sidebar.Item>
+
               <Sidebar.Item as={Link} to="/admin/interviews" icon={HiDocumentText}>
                 Rated Interviews
               </Sidebar.Item>
             </>
+
           )}
         </Sidebar.ItemGroup>
 

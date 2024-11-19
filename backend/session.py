@@ -1,8 +1,10 @@
 from typing import Dict
 from .chat_model import InterViewer
 
+
 class SessionManager:
     """Manages interview sessions"""
+
     def __init__(self):
         self.sessions: Dict[str, InterViewer] = {}
 

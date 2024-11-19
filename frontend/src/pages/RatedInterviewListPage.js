@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from 'flowbite-react';
 import config from '../config';
 import AdminSidebar from '../components/PageSidebar';
@@ -7,8 +7,7 @@ import AdminSidebar from '../components/PageSidebar';
 const RatedInterviewsPage = () => {
   const [interviews, setInterviews] = useState([]);
   const navigate = useNavigate();
-  const currentLocation = useLocation()
-  console.log("get location", currentLocation)
+
   useEffect(() => {
     const fetchInterviews = async () => {
       try {

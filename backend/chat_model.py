@@ -7,9 +7,9 @@ from langchain_core.prompts import (
     MessagesPlaceholder,
     SystemMessagePromptTemplate,
     HumanMessagePromptTemplate,
-
 )
 from langchain.memory import ConversationBufferMemory
+
 
 class InterViewer:
     def __init__(self, model_name, questions, name, role, resume, role_description):
@@ -39,9 +39,6 @@ class InterViewer:
         self.interviewer = LLMChain(
             llm=self.llm, prompt=self.prompt, memory=self.memory, verbose=False
         )
-        self.first_question = "Hello and welcome! I'm Bob, your interviewer, for this session . \
-        For the next 10 minutes I will ask you questions regarding your experience for the position role Django Developer. \
-        Can you can start by telling me a bit about your background experience?"
 
     def generate_question(self, user_response: str = "ask me a question") -> str:
         """generate the next interviewer question"""
@@ -72,6 +69,7 @@ def generate_questions(
 
     return guidelines
 
+
 def evaluate_interview(
     interview,
     role,
@@ -81,11 +79,7 @@ def evaluate_interview(
 
     evaluator_template = PromptTemplate(
         template=evaluator_prompt,
-        input_variables=[
-            'role',
-            'role_description',
-            'interview'            
-        ]
+        input_variables=["role", "role_description", "interview"],
     )
 
     llm = ChatOpenAI(model=model_name)
@@ -93,9 +87,7 @@ def evaluate_interview(
     question_generator_chain = LLMChain(llm=llm, prompt=evaluator_template)
 
     evaluation = question_generator_chain.run(
-        role=role,
-        role_description=role_description,
-        interview=interview
+        role=role, role_description=role_description, interview=interview
     )
 
     return evaluation

@@ -4,8 +4,10 @@ import InterviewSettingsPage from './pages/InterviewSettingsPage';
 import InterviewPage from './pages/InterviewPage';
 import AdminInterviewSettingsPage from './pages/AdminInterviewSettingsPage';
 import CongratulationsPage from './pages/CongratulationsPage';
-import RatedInterviewsPage from './pages/RatedInterviewPage';
+import RatedInterviewsPage from './pages/RatedInterviewListPage';
 import InterviewDetailsPage from './pages/InterviewDetailsPage';
+import RolesListingPage from './pages/RolesListingPage';
+import EditRolePage from './pages/EditRolePage';
 import { useAuth } from './hooks/useAuth';
 
 // ProtectedRoute component to check if the user is authenticated
@@ -78,7 +80,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
         <Route
           path='/congratulations'
           element={
@@ -87,12 +88,27 @@ const App = () => {
           </ProtectedRoute>
         }
         />
-
         <Route
-          path="/admin/create-interview"
+          path="/admin/create-role"
           element={
             <RoleProtectedRoute requiredRole="admin">
               <AdminInterviewSettingsPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/roles"
+          element={
+            <RoleProtectedRoute requiredRole="admin">
+              <RolesListingPage />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/role/:role"
+          element={
+            <RoleProtectedRoute requiredRole="admin">
+              <EditRolePage />
             </RoleProtectedRoute>
           }
         />
@@ -104,7 +120,6 @@ const App = () => {
             </RoleProtectedRoute>
           }
         />
-
         <Route
           path="/admin/interview/:session_id"
           element={
@@ -113,7 +128,6 @@ const App = () => {
             </RoleProtectedRoute>
           }
         />
-
         <Route path="*" element={<Navigate to="/settings" />} />
       </Routes>
     </Router>

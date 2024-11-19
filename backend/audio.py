@@ -54,7 +54,7 @@ class AudioToText:
                 audios.append(chunk)
 
         return audios
-    
+
     def transcribe_audio(self, audio_path: str) -> str:
         """
         Transcribe audio from a file path to text, handling files longer than 30 seconds.
@@ -96,5 +96,6 @@ class TextToAudio:
 
     def generate_audio_response(self, ai_response, ref_audio, file_path):
 
-        self.tts.tts_to_file(text=ai_response, speaker_wav=ref_audio, file_path=file_path)
-
+        self.tts.tts_to_file(
+            text=ai_response, speaker_wav=ref_audio, file_path=file_path
+        )
