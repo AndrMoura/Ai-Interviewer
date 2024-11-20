@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import config from '../config';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminSidebar from '../components/PageSidebar';
@@ -32,7 +33,6 @@ const InterviewDetailsPage = () => {
       </div>
     );
   }
-
   return (
     <div className="flex h-screen bg-gray-100">
       <AdminSidebar />
@@ -65,7 +65,7 @@ const InterviewDetailsPage = () => {
 
         <div className="bg-white shadow-lg rounded-lg p-6">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Evaluation</h2>
-          <p className="text-gray-700 whitespace-pre-line">{interview.evaluation}</p>
+            <ReactMarkdown className="prose max-w-none">{interview.evaluation}</ReactMarkdown>
         </div>
       </div>
     </div>

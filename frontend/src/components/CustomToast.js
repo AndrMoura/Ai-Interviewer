@@ -29,8 +29,8 @@ const iconMapping = {
 const CustomToast = ({
   message,
   iconType = "success",
-  duration = 5000, // auto-dismiss duration in milliseconds
-  onDismiss, // callback when the toast is dismissed
+  duration = 5000,
+  onDismiss
 }) => {
   const [visible, setVisible] = useState(true);
 
