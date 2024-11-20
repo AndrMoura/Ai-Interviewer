@@ -22,9 +22,9 @@ from .chat_model import InterViewer, generate_questions, evaluate_interview
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from .models import InterviewSettings, RoleData
+from .models import RoleSettings, RoleData
 from .session import SessionManager
-from .util import save_interview, save_dict
+from .util import transform_interview
 from .constants import SAVE_DIR, SECRET_KEY
 from .login import authenticate_user, create_access_token
 from .db import (
@@ -33,7 +33,9 @@ from .db import (
     get_interviews_from_db,
     get_role_settings,
     get_role_details_db,
-    update_role_details_db
+    update_role_details_db,
+    save_interview_to_db,
+    get_interview_detail_from_db
 )
 
 os.makedirs(SAVE_DIR, exist_ok=True)
@@ -95,19 +97,23 @@ def generate_audio_response(
 
 
 async def process_interview_data(interviewer: InterViewer, session_id):
-    """Process the interview data asynchronously (e.g., save, evaluate, etc.)"""
+    """Save interview to db"""
     print("Starting task to evaluate")
     try:
-        interview = save_interview(interviewer.memory.chat_memory.messages, session_id)
+        interview = transform_interview(interviewer.memory.chat_memory.messages)
         evaluation = evaluate_interview(
             interview,
             role=interviewer.role,
             role_description=interviewer.role_description,
         )
-        interview["evaluation"] = evaluation
-        save_dict(interview, "test_data.pkl")
-        rated_interviews_db.append(interview)
-        print("Interview data saved and evaluated.")
+        save_interview_to_db(
+            session_id=session_id,
+            role=interviewer.role,
+            role_description=interviewer.role_description,
+            messages=interview,
+            evaluation=evaluation
+        )
+
     except Exception as e:
         print(f"Error during interview processing: {e}")
 
@@ -140,7 +146,7 @@ async def handle_websocket_audio_stream(
                         tts, model_question, ref_audio="sample.wav"
                     )
                     await websocket.send_bytes(ogg_audio_buffer.read())
-                    print("Sent OGG audio response.")
+                    print("Sent audio response.")
                 else:
                     print("Failed to save audio.")
             if message.get("end_interview"):
@@ -152,6 +158,11 @@ async def handle_websocket_audio_stream(
     except WebSocketDisconnect:
         print("Cleaning up")
         buffer.close()
+    except RuntimeError as e:
+        print(f"Caught a RuntimeError: {e}")
+        buffer.close()
+        return True
+        
 
 
 @app.websocket("/ws/audio")
@@ -241,8 +252,12 @@ async def start_interview(
 
 @app.get("/interviews/")
 async def get_interview_summaries():
-    summaries = get_interviews_from_db()
-    return JSONResponse(content=summaries)
+    interviews = get_interviews_from_db()
+    for interview in interviews:
+        interview['preview'] = interview['messages'][0]['message'][:50]
+        interview.pop('messages')
+
+    return JSONResponse(content=interviews)
 
 
 @app.get("/interviews/{session_id}")
@@ -254,13 +269,16 @@ async def get_interview_detail(session_id: str):
 
 
 @app.post("/admin/create-role")
-async def save_interview_settings(settings: InterviewSettings):
-    create_role_to_db(
-        role=settings.role,
-        custom_questions=settings.customQuestions,
-        job_description=settings.jobDescription,
-    )
-    return {"message": "Interview settings saved successfully"}
+async def save_interview_settings(settings: RoleSettings):
+    try:
+        create_role_to_db(
+            role=settings.role,
+            custom_questions=settings.customQuestions,
+            job_description=settings.jobDescription,
+        )
+        return {"message": "Interview settings saved successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/admin/roles")

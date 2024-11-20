@@ -19,7 +19,7 @@ def get_role_settings(role: str):
         return result if result else (None, None)
 
 
-def save_interview(session_id, role, role_description, messages, evaluation):
+def save_interview_to_db(session_id, role, role_description, messages, evaluation):
     """Save a new interview to the database."""
     with sqlite3.connect(DATABASE_NAME) as conn:
         cursor = conn.cursor()
@@ -44,28 +44,34 @@ def save_interview(session_id, role, role_description, messages, evaluation):
 
 def create_role_to_db(role: str, custom_questions, job_description):
     """Add or update a role in the role_settings table."""
-    with sqlite3.connect(DATABASE_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT OR REPLACE INTO role_settings (role, custom_questions, job_description)
-            VALUES (?, ?, ?)
-            """,
-            (role, custom_questions, job_description),
-        )
-        conn.commit()
+    try:
+        with sqlite3.connect(DATABASE_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO role_settings (role, custom_questions, job_description)
+                VALUES (?, ?, ?)
+                """,
+                (role, custom_questions, job_description),
+            )
+            conn.commit()
+    except sqlite3.IntegrityError as e:
+        raise ValueError(f"Role '{role}' already exists.") from e
+    except Exception as e:
+        raise ValueError(f"Error occurred while creating the role: {str(e)}") from e
 
 
 def get_interviews_from_db():
-    """Retrieve a list of all interviews with previews of the first message."""
+    """Retrieve a list of all interviews."""
     with sqlite3.connect(DATABASE_NAME) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT session_id, messages FROM interviews")
+        
         return [
             {
                 "session_id": row[0],
-                "preview": (
-                    json.loads(row[1])[0].get("message")[:50]
+                "messages": (
+                    json.loads(row[1])
                     if row[1]
                     else "Empty Interview"
                 ),

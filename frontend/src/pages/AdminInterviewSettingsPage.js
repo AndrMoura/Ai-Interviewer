@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import config from '../config';
 import { Button, Textarea, TextInput } from 'flowbite-react';
 import AdminSidebar from '../components/PageSidebar';
+import CustomToast from '../components/CustomToast';
 
 const AdminInterviewSettingsPage = () => {
   const [role, setRole] = useState('');
   const [customQuestions, setCustomQuestions] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  
+  const [toastConfig, setToastConfig] = useState(null);
+
   const handleSaveInterviewSettings = async () => {
     try {
       const response = await fetch(`${config.API_BASE_URL}/admin/create-role`, {
@@ -25,12 +27,21 @@ const AdminInterviewSettingsPage = () => {
       const data = await response.json();
 
       if (response.status === 200) {
-        alert('Interview settings saved successfully');
+        setToastConfig({
+          message: "Created role successfully",
+          iconType: "success",
+        });
       } else {
-        alert('Error saving interview settings');
+        setToastConfig({
+          message: "Error creating role",
+          iconType: "error",
+        });
       }
     } catch (error) {
-      alert('Error saving interview settings');
+      setToastConfig({
+        message: "Error updating role",
+        iconType: "error",
+      });
     }
   };
 
@@ -82,8 +93,16 @@ const AdminInterviewSettingsPage = () => {
           <Button onClick={handleSaveInterviewSettings} className="w-full">
             Create Role
           </Button>
+
         </div>
       </div>
+      {toastConfig && (
+          <CustomToast
+            message={toastConfig.message}
+            iconType={toastConfig.iconType}
+            onDismiss={() => setToastConfig(null)}
+          />
+        )}
     </div>
   );
 };

@@ -6,10 +6,11 @@ class LoginModel(BaseModel):
     password: str
 
 
-class InterviewSettings(BaseModel):
+class RoleSettings(BaseModel):
     role: str
     customQuestions: str
     jobDescription: str
+
 
 class RoleData(BaseModel):
     custom_questions: Optional[str] = None

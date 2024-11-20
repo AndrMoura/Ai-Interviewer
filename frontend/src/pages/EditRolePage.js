@@ -9,16 +9,13 @@ const RoleEditPage = () => {
   const { role } = useParams();
   const [customQuestions, setCustomQuestions] = useState('');
   const [jobDescription, setJobDescription] = useState('');
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastIconType, setToastIconType] = useState('success');
+  const [toastConfig, setToastConfig] = useState(null);
 
   useEffect(() => {
     const fetchRoleDetails = async () => {
       try {
         const response = await fetch(`${config.API_BASE_URL}/admin/roles/${role}`);
         const data = await response.json();
-        
         if (response.status === 200) {
           setCustomQuestions(data.custom_questions || '');
           setJobDescription(data.job_description || '');
@@ -49,30 +46,23 @@ const RoleEditPage = () => {
       const data = await response.json();
 
       if (response.status === 200) {
-        setToastMessage('Role updated successfully');
-        setToastIconType('success');
-        setToastVisible(true);
+        setToastConfig({
+          message: "Role updated successfully",
+          iconType: "success",
+        });
       } else {
-        setToastMessage('Error updating role');
-        setToastIconType('error');
-        setToastVisible(true);
+        setToastConfig({
+          message: "Error updating role",
+          iconType: "error",
+        });
       }
     } catch (error) {
-      setToastMessage('Error updating role');
-      setToastIconType('error');
-      setToastVisible(true);
+      setToastConfig({
+        message: "Error updating role",
+        iconType: "error",
+      });
     }
   };
-
-  useEffect(() => {
-    if (toastVisible) {
-      const timer = setTimeout(() => {
-        setToastVisible(false);
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [toastVisible]);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -118,13 +108,12 @@ const RoleEditPage = () => {
           </Button>
         </div>
 
-        {toastVisible && (
-          <div className="fixed top-4 right-4 w-[300px] z-50">
-            <CustomToast
-              message={toastMessage}
-              iconType={toastIconType}
-            />
-          </div>
+        {toastConfig && (
+          <CustomToast
+            message={toastConfig.message}
+            iconType={toastConfig.iconType}
+            onDismiss={() => setToastConfig(null)}
+          />
         )}
       </div>
     </div>

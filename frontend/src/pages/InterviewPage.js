@@ -11,9 +11,7 @@ const InterviewPage = () => {
   const [timeLeft, setTimeLeft] = useState(60 * 10); 
   const [isInterviewStarted, setIsInterviewStarted] = useState(false);
   const [isSavingInterview, setIsSavingInterview] = useState(false); 
-  const [isInterviewEnded, setIsInterviewEnded] = useState(false);
   const [avgVolume, setAvgVolume] = useState(0);
-  const [audioBlob, setAudioBlob] = useState(null); 
   const [audioData, setAudioData] = useState(null); 
   const [session_id, setSessionId] = useState(null)
   const [isListening, setIsListening] = useState(false);
@@ -39,7 +37,6 @@ const InterviewPage = () => {
   }, [state]);
 
   useEffect(() => {
-    console.log("hasPageLoaded.current", hasPageLoaded.current)
     if (hasPageLoaded.current) {
       deleteSessionIfNotStarted()
     }
@@ -49,7 +46,6 @@ const InterviewPage = () => {
   }, []);
   
     const deleteSessionIfNotStarted = async () => {
-    console.log("Deleting session", session_id);
     if (session_id && !isInterviewStarted) {
       try {
         await fetch(`${config.API_BASE_URL}/delete_session/${session_id}`, {
@@ -64,7 +60,6 @@ const InterviewPage = () => {
 
   useEffect(() => {
     return () => {
-      console.log("Component unmounted, cleaning up...");
       deleteSessionIfNotStarted();
     };
   }, [session_id]);
@@ -79,7 +74,7 @@ const InterviewPage = () => {
 
 
   const startListening = async () => {
-    if (isListening) return;  // Skip if waiting for a response
+    if (isListening) return;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -120,7 +115,7 @@ const InterviewPage = () => {
         audio.onended = () => {
           console.log("Audio playback finished, re-enabling listening");
           setIsListening(true);
-          startListening(); // Resume listening
+          startListening();
         };
       };
     } catch (error) {
@@ -149,9 +144,6 @@ const InterviewPage = () => {
     };
 
     mediaRecorder.current.onstop = () => {
-      
-      const fullAudioBlob = new Blob(chunks.current, { type: 'audio/mp3' });
-      setAudioBlob(fullAudioBlob);
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         console.log("media recorder sending data")
         ws.current.send(JSON.stringify({ endOfMessage: true }));
@@ -225,6 +217,14 @@ const InterviewPage = () => {
 
   const playBase64Audio = () => {
     if (audioData) {
+      
+      ws.current = new WebSocket(`${config.WS_BASE_URL}/audio`);
+      ws.current.onopen = () => {
+        console.log('WebSocket connected');
+        ws.current.send(JSON.stringify({ session_id: session_id }));
+        flushSendQueue();
+      };
+
       const audioBlob = new Blob([new Uint8Array(atob(audioData).split('').map(c => c.charCodeAt(0)))], { type: 'audio/ogg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
@@ -241,7 +241,6 @@ const InterviewPage = () => {
     }
   }
 
-  // Timer function to start the countdown
   useEffect(() => {
     let timerInterval;
     if (isInterviewStarted && timeLeft > 0) {
@@ -250,7 +249,6 @@ const InterviewPage = () => {
       }, 1000);
     }
 
-    // Cleanup the interval if the timer is stopped or the interview ends
     if (timeLeft <= 0) {
       signalEndInterView()
       clearInterval(timerInterval);
@@ -266,7 +264,6 @@ const InterviewPage = () => {
 
   const endInterview = () => {
 
-    setIsInterviewEnded(true);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -282,13 +279,11 @@ const InterviewPage = () => {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
     }
-    console.log("Sent signal")
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ end_interview: true }));
     }
   }
 
-  // Format time into minutes and seconds
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;

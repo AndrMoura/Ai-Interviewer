@@ -6,3 +6,5 @@ test_data.pkl
 frontend/node_modules
 output.wav
 app.db
+saved_audio
+output.wav
