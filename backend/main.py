@@ -24,7 +24,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from .models import RoleSettings, RoleData
 from .session import SessionManager
-from .util import transform_interview
+from .util import transform_interview, resume_reader
 from .constants import SAVE_DIR, SECRET_KEY
 from .login import authenticate_user, create_access_token
 from .db import (
@@ -222,7 +222,15 @@ async def start_interview(
     portfolio_text: str = Form(None),
     portfolio_file: UploadFile = File(None),
 ):
-    resume_text = portfolio_text or (await portfolio_file.read()).decode("utf-8")
+    if portfolio_text:
+        resume_text = portfolio_text
+    elif portfolio_file:
+        try:
+            pdf_content = await portfolio_file.read()
+            resume_text = resume_reader(pdf_content)
+        except Exception as e:
+            return JSONResponse(status_code=400, content={"detail": f"Error reading PDF: {str(e)}"})
+    print("resume_text", resume_text)
     custom_questions, _ = get_role_settings(role)
 
     guidelines = generate_questions(
