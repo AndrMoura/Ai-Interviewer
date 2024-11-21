@@ -222,40 +222,42 @@ async def start_interview(
     portfolio_text: str = Form(None),
     portfolio_file: UploadFile = File(None),
 ):
-    if portfolio_text:
-        resume_text = portfolio_text
-    elif portfolio_file:
-        try:
-            pdf_content = await portfolio_file.read()
-            resume_text = resume_reader(pdf_content)
-        except Exception as e:
-            return JSONResponse(status_code=400, content={"detail": f"Error reading PDF: {str(e)}"})
-    print("resume_text", resume_text)
-    custom_questions, _ = get_role_settings(role)
+    try:
+        if portfolio_text:
+            resume_text = portfolio_text
+        elif portfolio_file:
+            try:
+                pdf_content = await portfolio_file.read()
+                resume_text = resume_reader(pdf_content)
+            except Exception as e:
+                return JSONResponse(status_code=400, content={"detail": f"Error reading PDF: {str(e)}"})
+        custom_questions, _ = get_role_settings(role)
 
-    guidelines = generate_questions(
-        resume=resume_text,
-        role=role,
-        role_description=role_description,
-        must_have_questions=custom_questions.split("\n") if custom_questions else [],
-    )
-    session_id = str(uuid.uuid4())
-    interviewer = InterViewer(
-        "gpt-4o-mini", guidelines, "Anna", role, resume_text, role_description
-    )
-    first_question = interviewer.generate_question("ask a question")
-    interviewer.memory.clear()
-    interviewer.memory.chat_memory.add_ai_message(first_question)
+        guidelines = generate_questions(
+            resume=resume_text,
+            role=role,
+            role_description=role_description,
+            must_have_questions=custom_questions.split("\n") if custom_questions else [],
+        )
+        session_id = str(uuid.uuid4())
+        interviewer = InterViewer(
+            "gpt-4o-mini", guidelines, "Anna", role, resume_text, role_description
+        )
+        first_question = interviewer.generate_question("ask a question")
+        interviewer.memory.clear()
+        interviewer.memory.chat_memory.add_ai_message(first_question)
 
-    buffer = generate_audio_response(
-        tts=tts, text=first_question, ref_audio="sample.wav", output_path="output.wav"
-    )
-    session_manager.create_session(session_id, interviewer)
+        buffer = generate_audio_response(
+            tts=tts, text=first_question, ref_audio="sample.wav", output_path="output.wav"
+        )
+        session_manager.create_session(session_id, interviewer)
 
-    audio_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-    return JSONResponse(
-        content={"audio_base64": audio_base64, "session_id": session_id}
-    )
+        audio_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        return JSONResponse(
+            content={"audio_base64": audio_base64, "session_id": session_id}
+        )
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"detail": f"Unexpected error: {str(e)}"})
 
 
 @app.get("/interviews/")
