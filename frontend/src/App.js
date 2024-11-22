@@ -1,13 +1,15 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import InterviewSettingsPage from './pages/InterviewSettingsPage';
-import InterviewPage from './pages/InterviewPage';
-import AdminInterviewSettingsPage from './pages/AdminInterviewSettingsPage';
-import CongratulationsPage from './pages/CongratulationsPage';
-import RatedInterviewsPage from './pages/RatedInterviewListPage';
-import InterviewDetailsPage from './pages/InterviewDetailsPage';
-import RolesListingPage from './pages/RolesListingPage';
-import EditRolePage from './pages/EditRolePage';
+import {
+  LoginPage,
+  InterviewSettingsPage,
+  InterviewPage,
+  AdminInterviewSettingsPage,
+  CongratulationsPage,
+  RatedInterviewsPage,
+  InterviewDetailsPage,
+  RolesListingPage,
+  EditRolePage,
+} from './pages'; 
 import { useAuth } from './hooks/useAuth';
 
 // ProtectedRoute component to check if the user is authenticated

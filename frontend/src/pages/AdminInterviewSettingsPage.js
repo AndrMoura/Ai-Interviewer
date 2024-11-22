@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import config from '../config';
 import { Button, Textarea, TextInput } from 'flowbite-react';
-import AdminSidebar from '../components/PageSidebar';
-import CustomToast from '../components/CustomToast';
+
+import {AdminSidebar, CustomToast} from '../components'
 
 const AdminInterviewSettingsPage = () => {
   const [role, setRole] = useState('');
