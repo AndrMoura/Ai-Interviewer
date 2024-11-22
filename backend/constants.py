@@ -10,7 +10,7 @@ STT_MODEL = os.environ.get("STT_MODEL", "tiny")
 TTS_MODEL = os.environ.get("TTS_MODEL", "tts_models/en/ljspeech/tacotron2-DDC")
 
 # if multilingual specify 'en' or 'fr'
-MULTILINGUAL_STT = os.environ.get("TTS_MODEL", False)  # if multilingual specify 'en' or 'fr'
+MULTILINGUAL_STT = os.environ.get("MULTILINGUAL_STT", False)  # if multilingual specify 'en' or 'fr'
 
 SAVE_DIR = "saved_audio"
 

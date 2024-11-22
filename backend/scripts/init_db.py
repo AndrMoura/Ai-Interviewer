@@ -1,8 +1,8 @@
 import sqlite3
 
 from passlib.context import CryptContext
-from .constants import DATABASE_NAME, ROLE_CFG
-from .login import hash_password
+from ..constants import DATABASE_NAME, ROLE_CFG
+from ..login import hash_password
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

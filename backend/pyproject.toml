@@ -1,0 +1,17 @@
+[tool.flake8]
+max-line-length = 99
+ignore = "E203, E266, W503"
+extend-ignore = "E203"
+exclude = [
+    ".git",
+    "__pycache__"
+]
+max-complexity = 10
+per-file-ignores = [
+    "prompt.py:E501",
+    "constants.py:E501",
+    "jd.py:E501"
+]
+
+[tool.black]
+line-length = 99

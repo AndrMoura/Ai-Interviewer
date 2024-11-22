@@ -9,8 +9,8 @@ def get_role_settings(role: str):
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT custom_questions, job_description 
-            FROM role_settings 
+            SELECT custom_questions, job_description
+            FROM role_settings
             WHERE role = ?
             """,
             (role,),
@@ -66,15 +66,11 @@ def get_interviews_from_db():
     with sqlite3.connect(DATABASE_NAME) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT session_id, messages FROM interviews")
-        
+
         return [
             {
                 "session_id": row[0],
-                "messages": (
-                    json.loads(row[1])
-                    if row[1]
-                    else "Empty Interview"
-                ),
+                "messages": (json.loads(row[1]) if row[1] else "Empty Interview"),
             }
             for row in cursor.fetchall()
         ]
@@ -134,8 +130,8 @@ def get_user_from_db(username):
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT username, password, role 
-            FROM users 
+            SELECT username, password, role
+            FROM users
             WHERE username = ?
             """,
             (username,),
@@ -155,7 +151,7 @@ async def get_roles_db():
             {
                 "role": row[0],
                 "job_description": row[1] if row[1] else "No description available",
-                "custom_questions": row[2] if row[2] else "No custom questions available"
+                "custom_questions": row[2] if row[2] else "No custom questions available",
             }
             for row in cursor.fetchall()
         ]
@@ -183,6 +179,7 @@ async def get_role_details_db(role: str):
             }
         return None
 
+
 async def update_role_details_db(role: str, role_data: dict):
     """Update role details in the database."""
     with sqlite3.connect(DATABASE_NAME) as conn:
@@ -193,7 +190,7 @@ async def update_role_details_db(role: str, role_data: dict):
             SET custom_questions = ?, job_description = ?
             WHERE role = ?
             """,
-            (role_data['custom_questions'], role_data['job_description'], role),
+            (role_data["custom_questions"], role_data["job_description"], role),
         )
         conn.commit()
 

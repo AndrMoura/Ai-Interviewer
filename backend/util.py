@@ -1,4 +1,3 @@
-
 from PyPDF2 import PdfReader
 from io import BytesIO
 from langchain.schema import AIMessage, BaseMessage
@@ -6,7 +5,7 @@ from typing import List
 
 
 def transform_interview(conversation_data: List[BaseMessage]):
-
+    """Transform a list of conversation messages to a list of messages with role and content."""
     messages_list = []
 
     for msg in conversation_data:
@@ -15,7 +14,9 @@ def transform_interview(conversation_data: List[BaseMessage]):
 
     return messages_list
 
+
 def resume_reader(resume_bytes):
+    """Read a resume from a BytesIO buffer and return the text."""
     resume_stream = BytesIO(resume_bytes)
     pdf_reader = PdfReader(resume_stream)
     text = ""
