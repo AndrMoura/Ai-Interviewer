@@ -3,6 +3,7 @@ import io
 import json
 import base64
 import uuid
+import logging
 import asyncio
 
 from pydub import AudioSegment
@@ -25,7 +26,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from .models import RoleSettings, RoleData
 from .session import SessionManager
 from .util import transform_interview, resume_reader
-from .constants import SAVE_DIR, SECRET_KEY
+from .constants import (
+    SAVE_DIR,
+    SECRET_KEY,
+    STT_MODEL,
+    TTS_MODEL,
+    MULTILINGUAL_STT,
+    INTERVIEW_MODEL,
+    INTERVIEW_NAME,
+)
 from .login import authenticate_user, create_access_token
 from .db import (
     get_roles_db,
@@ -35,8 +44,13 @@ from .db import (
     get_role_details_db,
     update_role_details_db,
     save_interview_to_db,
-    get_interview_detail_from_db
+    get_interview_detail_from_db,
 )
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logging.getLogger("TTS").setLevel(logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.ERROR)
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 app = FastAPI()
@@ -48,8 +62,8 @@ origins = [
 
 def initialize_tts_stt():
     """Initialize the Text-to-Speech model."""
-    tts = TextToAudio()
-    stt = AudioToText("tiny")
+    tts = TextToAudio(TTS_MODEL, MULTILINGUAL_STT)
+    stt = AudioToText(STT_MODEL)
     return tts, stt
 
 
@@ -77,31 +91,30 @@ async def save_audio_buffer_to_file(buffer):
         return webm_file_path
 
     except Exception as e:
-        print(f"Error saving audio to WebM: {e}")
+        logger.error(f"Error saving audio buffer to file: {e}")
         return None
     finally:
         buffer.seek(0)
         buffer.truncate(0)
 
 
-def generate_audio_response(
+async def generate_audio_response(
     tts, text, ref_audio, file_format="mp3", output_path="question.wav"
 ) -> io.BytesIO:
     """Generate an audio from text using TTS and return as a BytesIO buffer."""
-    tts.generate_audio_response(text, ref_audio=ref_audio, file_path=output_path)
+    await tts.generate_audio_response(text, ref_audio=ref_audio, file_path=output_path)
     audio = AudioSegment.from_wav(output_path)
     ogg_audio_buffer = io.BytesIO()
     audio.export(ogg_audio_buffer, format=file_format)
-    ogg_audio_buffer.seek(0)
     return ogg_audio_buffer
 
 
 async def process_interview_data(interviewer: InterViewer, session_id):
     """Save interview to db"""
-    print("Starting task to evaluate")
     try:
+        logger.info("Processing interview data")
         interview = transform_interview(interviewer.memory.chat_memory.messages)
-        evaluation = evaluate_interview(
+        evaluation = await evaluate_interview(
             interview,
             role=interviewer.role,
             role_description=interviewer.role_description,
@@ -111,11 +124,11 @@ async def process_interview_data(interviewer: InterViewer, session_id):
             role=interviewer.role,
             role_description=interviewer.role_description,
             messages=interview,
-            evaluation=evaluation
+            evaluation=evaluation,
         )
-
+        logger.info("Interview data saved to db")
     except Exception as e:
-        print(f"Error during interview processing: {e}")
+        logger.error(f"Error during interview processing: {e}")
 
 
 async def handle_websocket_audio_stream(
@@ -137,18 +150,16 @@ async def handle_websocket_audio_stream(
             if message.get("endOfMessage"):
                 webm_file_path = await save_audio_buffer_to_file(buffer)
                 user_ans = stt.transcribe_audio(webm_file_path)
-                print("user_ans", user_ans)
+                logger.info(f"User answer: {user_ans}")
                 if webm_file_path:
-                    model_question = interviewer.generate_question(
-                        user_response=user_ans
-                    )
-                    ogg_audio_buffer = generate_audio_response(
+                    model_question = await interviewer.generate_question(user_response=user_ans)
+                    ogg_audio_buffer = await generate_audio_response(
                         tts, model_question, ref_audio="sample.wav"
                     )
                     await websocket.send_bytes(ogg_audio_buffer.read())
-                    print("Sent audio response.")
+                    logger.info("Sent audio response.")
                 else:
-                    print("Failed to save audio.")
+                    logger.error("Failed to save audio.")
             if message.get("end_interview"):
                 asyncio.create_task(process_interview_data(interviewer, session_id))
                 await websocket.send_text("Interview ended successfully.")
@@ -156,13 +167,11 @@ async def handle_websocket_audio_stream(
                 buffer.close()
                 return True
     except WebSocketDisconnect:
-        print("Cleaning up")
         buffer.close()
     except RuntimeError as e:
-        print(f"Caught a RuntimeError: {e}")
+        logger.error(f"Caught a RuntimeError: {e}")
         buffer.close()
         return True
-        
 
 
 @app.websocket("/ws/audio")
@@ -177,7 +186,7 @@ async def audio_stream(websocket: WebSocket):
 
     interviewer = session_manager.get_session(session_id)
     if not interviewer:
-        print("Interviewer not found")
+        logger.error("Interviewer not found")
         await websocket.close()
         return
 
@@ -230,33 +239,42 @@ async def start_interview(
                 pdf_content = await portfolio_file.read()
                 resume_text = resume_reader(pdf_content)
             except Exception as e:
-                return JSONResponse(status_code=400, content={"detail": f"Error reading PDF: {str(e)}"})
+                return JSONResponse(
+                    status_code=400, content={"detail": f"Error reading PDF: {str(e)}"}
+                )
         custom_questions, _ = get_role_settings(role)
+        must_have_questions = (custom_questions.split("\n") if custom_questions else [],)
 
-        guidelines = generate_questions(
+        guidelines = await generate_questions(
             resume=resume_text,
             role=role,
             role_description=role_description,
-            must_have_questions=custom_questions.split("\n") if custom_questions else [],
         )
         session_id = str(uuid.uuid4())
         interviewer = InterViewer(
-            "gpt-4o-mini", guidelines, "Anna", role, resume_text, role_description
+            INTERVIEW_MODEL,
+            guidelines,
+            INTERVIEW_NAME,
+            role,
+            resume_text,
+            role_description,
+            must_have_questions,
         )
-        first_question = interviewer.generate_question("ask a question")
+        first_question = await interviewer.generate_question("ask a question")
         interviewer.memory.clear()
         interviewer.memory.chat_memory.add_ai_message(first_question)
-
-        buffer = generate_audio_response(
-            tts=tts, text=first_question, ref_audio="sample.wav", output_path="output.wav"
+        buffer = await generate_audio_response(
+            tts=tts,
+            text=first_question,
+            ref_audio="sample.wav",
+            output_path="output.wav",
         )
         session_manager.create_session(session_id, interviewer)
 
         audio_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-        return JSONResponse(
-            content={"audio_base64": audio_base64, "session_id": session_id}
-        )
+        return JSONResponse(content={"audio_base64": audio_base64, "session_id": session_id})
     except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
         return JSONResponse(status_code=500, content={"detail": f"Unexpected error: {str(e)}"})
 
 
@@ -264,8 +282,8 @@ async def start_interview(
 async def get_interview_summaries():
     interviews = get_interviews_from_db()
     for interview in interviews:
-        interview['preview'] = interview['messages'][0]['message'][:50]
-        interview.pop('messages')
+        interview["preview"] = interview["messages"][0]["message"][:50]
+        interview.pop("messages")
 
     return JSONResponse(content=interviews)
 
@@ -288,6 +306,7 @@ async def save_interview_settings(settings: RoleSettings):
         )
         return {"message": "Interview settings saved successfully"}
     except ValueError as e:
+        logger.error(f"Error saving interview settings: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -307,6 +326,7 @@ async def get_role_details(role: str):
             raise HTTPException(status_code=404, detail="Role not found")
         return role_details
     except Exception as e:
+        logger.error(f"Error fetching role details: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching role details: {str(e)}")
 
 
@@ -321,6 +341,7 @@ async def update_role(role: str, role_data: RoleData):
             raise HTTPException(status_code=404, detail="Role not found")
         return {"message": "Role updated successfully"}
     except Exception as e:
+        logger.error(f"Error updating role: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating role: {str(e)}")
 
 
@@ -330,4 +351,5 @@ async def delete_session(session_id: str):
         session_manager.remove_session(session_id)
         return {"message": f"Session {session_id} deleted successfully."}
     except ValueError as e:
+        logger.error(f"Error deleting session: {str(e)}")
         raise HTTPException(status_code=404, detail=str(e))
