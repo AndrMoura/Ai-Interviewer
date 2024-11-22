@@ -4,6 +4,8 @@ import { Button, Checkbox, Select, Textarea, FileInput, Spinner } from 'flowbite
 import { useNavigate,  } from 'react-router-dom';
 import axios from 'axios';
 import PageSidebar from '../components/PageSidebar';
+import { CustomToast} from '../components'
+
 
 const InterviewSettingsPage = () => {
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ const InterviewSettingsPage = () => {
   const [isPdf, setIsPdf] = useState(false);
   const [pdfFile, setPdfFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [toastConfig, setToastConfig] = useState(null);
 
   const handleFileChange = (e) => {
     setPdfFile(e.target.files[0]);
@@ -32,7 +35,6 @@ const InterviewSettingsPage = () => {
       formData.append('portfolio_file', pdfFile);
     }
   
-    // Start loading
     setIsLoading(true);
 
     try {
@@ -43,7 +45,6 @@ const InterviewSettingsPage = () => {
   
       if (response.ok) {
         const data = await response.json();
-        console.log('Interview prepared:', data);
   
         navigate('/interview', { 
           state: { 
@@ -53,7 +54,10 @@ const InterviewSettingsPage = () => {
         });
       } else {
         const data = await response.json();
-        console.error('Error:', data);
+        setToastConfig({
+          message: data.detail,
+          iconType: "error",
+        });
       }
     } catch (error) {
       console.error('Error sending interview data:', error);
@@ -178,7 +182,15 @@ const InterviewSettingsPage = () => {
           )}
         </div>
       </div>
+      {toastConfig && (
+          <CustomToast
+            message={toastConfig.message}
+            iconType={toastConfig.iconType}
+            onDismiss={() => setToastConfig(null)}
+          />
+        )}
     </div>
+    
   );
 };
 

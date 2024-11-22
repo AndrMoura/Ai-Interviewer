@@ -3,7 +3,7 @@ import './VoiceIndicator.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMicrophone } from '@fortawesome/free-solid-svg-icons';
 
-const VoiceIndicator = ({ avgVolume }) => {
+const VoiceIndicator = ({ avgVolume, isListening }) => {
   return (
     <div className="flex items-center space-x-2">
       <div className="indicator-wrapper">
@@ -15,8 +15,11 @@ const VoiceIndicator = ({ avgVolume }) => {
           }}
         />
       </div>
-      <div className="microphone-icon text-green-500 text-2xl">
-        <FontAwesomeIcon icon={faMicrophone} />
+      <div className="microphone-icon text-2xl">
+        <FontAwesomeIcon 
+          icon={faMicrophone} 
+          color={isListening ? '#4CAF50' : '#A0AEC0'}
+        />
       </div>
     </div>
   );

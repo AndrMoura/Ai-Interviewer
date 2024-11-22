@@ -28,6 +28,11 @@ const InterviewPage = () => {
   const audioRef = useRef(null);  
   const navigate = useNavigate(); 
   const hasPageLoaded = useRef(false);
+  const isSavingInterviewRef = useRef(isSavingInterview);
+
+  useEffect(() => {
+    isSavingInterviewRef.current = isSavingInterview;
+  }, [isSavingInterview]);
 
   useEffect(() => {
     if (state?.audio_base64) {
@@ -85,7 +90,6 @@ const InterviewPage = () => {
       sourceNode.connect(analyserNode.current);
       monitorVolume();
 
-      ws.current = new WebSocket(`${config.WS_BASE_URL}/audio`);
       ws.current.onopen = () => {
         console.log('WebSocket connected');
         ws.current.send(JSON.stringify({ session_id: session_id }));
@@ -95,10 +99,10 @@ const InterviewPage = () => {
       ws.current.onerror = (error) => console.error('WebSocket error:', error);
 
       ws.current.onmessage = (event) => {
-
+        
         if (event.data === "Interview ended successfully.") {
-          console.log("Signal to end interview")
-          endInterview()
+          console.log("Signal to end interview");
+          endInterview();
         }
 
         setIsListening(false);
@@ -106,18 +110,19 @@ const InterviewPage = () => {
         const audioBlob = new Blob([audioData], { type: 'audio/ogg' });
         const audio = new Audio(URL.createObjectURL(audioBlob));
         audioRef.current = audio;
-
-        audio.play().catch((err) => {
-          console.error('Error playing audio:', err);
-          setIsListening(true);
-        });
-
-        audio.onended = () => {
-          console.log("Audio playback finished, re-enabling listening");
-          setIsListening(true);
-          startListening();
-        };
-      };
+        if (!isSavingInterviewRef.current) {
+          audio.play().catch((err) => {
+              console.error('Error playing audio:', err);
+              setIsListening(true);
+            });
+          
+            audio.onended = () => {
+              console.log("Audio playback finished, re-enabling listening");
+              setIsListening(true);
+              startListening();
+            };
+          };
+      }
     } catch (error) {
       console.error('Error accessing microphone:', error);
     }
@@ -272,9 +277,8 @@ const InterviewPage = () => {
   };
 
   const signalEndInterView = () => {
-    setIsSavingInterview(true)
+    setIsSavingInterview(true);
     stopListening();
-
     if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -321,7 +325,7 @@ const InterviewPage = () => {
         <div className="flex flex-col h-full items-center justify-center px-6">
           <div className="w-full max-w-3xl p-6 shadow-lg rounded-lg bg-white flex flex-col items-center space-y-6">
             {/* Microphone Indicator */}
-            <VoiceIndicator avgVolume={avgVolume} />
+            <VoiceIndicator avgVolume={avgVolume} isListening={isListening} />
             {/* Start/Stop Interview Button */}
             <div className="w-full">
               {!isInterviewStarted ? (
