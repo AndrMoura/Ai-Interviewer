@@ -1,4 +1,5 @@
 import whisper
+import asyncio
 import torch
 import numpy as np
 
@@ -13,7 +14,7 @@ class AudioToText:
         """
         print(f"Loading Whisper model: {model_size}")
         self.model = whisper.load_model(model_size)
-        self.sample_rate = 16000
+        self.sample_rate = 22050
         self.chunk_length = 30 * self.sample_rate
 
     def save_audio(self, audio_segment: AudioSegment, filename="temp_audio.wav") -> str:
@@ -88,14 +89,27 @@ class AudioToText:
 
 
 class TextToAudio:
-    def __init__(self):
+    def __init__(self, model_name, multilingual=False):
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.tts = TTS("tts_models/en/ljspeech/tacotron2-DDC").to(self.device)
+        self.tts = TTS(model_name).to(self.device)
         self.sample_rate = 24000
+        self.language = multilingual
 
-    def generate_audio_response(self, ai_response, ref_audio, file_path):
+    async def generate_audio_response(self, ai_response, ref_audio, file_path):
+        def tts_to_file_sync():
+            if self.language:
+                self.tts.tts_to_file(
+                    text=ai_response,
+                    speaker_wav=ref_audio,
+                    file_path=file_path,
+                    language=self.language,
+                )
+            else:
+                self.tts.tts_to_file(
+                    text=ai_response,
+                    speaker_wav=ref_audio,
+                    file_path=file_path,
+                )
 
-        self.tts.tts_to_file(
-            text=ai_response, speaker_wav=ref_audio, file_path=file_path
-        )
+        await asyncio.to_thread(tts_to_file_sync)
