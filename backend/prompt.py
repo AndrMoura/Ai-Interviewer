@@ -18,7 +18,6 @@ Output:
 - Create a set of 8-10 questions tailored to the Resume and the role description.
 - Start with general questions not specific Technical questions.
 - Structure questions by category: Background questions, Technical questions, and Career Goals.
-- If there's questions in the MUST HAVE QUESTIONS section, you must include them in your guidelines
 """
 
 interviewer_prompt = """

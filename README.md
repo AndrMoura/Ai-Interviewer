@@ -1,6 +1,6 @@
 # AI Interviewer
 
-Welcome to the AI Interviewer! This is a propotype web application that allows you to interview candidates to a specific job role using a voice interface. You can also use it to practice for interviews.
+Welcome to the AI Interviewer! This is a propotype web application that allows you to interview candidates to a specific job role using a voice interface. You can also use it to practice for your own interviews!
 
 ## **Key Features**
 
@@ -54,9 +54,9 @@ Run the script to fill the database with two users (admin and normal user) and o
 python -m backend.init_db
 ```
 
-Export your OpenAI API key:
+Export your Model API key:
 ```bash
-export OPENAI_API_KEY="your_openai_api_key"
+export OPENAI_API_KEY="your_openai_api_key" or GOOGLE_API_KEY="your_google_api_key"
 ```
 Finally, run the app:
 
@@ -65,4 +65,3 @@ uvicorn backend.main:app
 npm start
 ```
 To quickly test the app, login as admin (username: adminuser, password: adminpassword) and start a new interview. 🚀
-By default, the app uses the `gpt-4o-mini`. Check the `backend/constants.py` file to change the model.

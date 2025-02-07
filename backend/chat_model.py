@@ -1,4 +1,6 @@
-from langchain_openai import ChatOpenAI
+import os
+from langchain_community.chat_models.openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import LLMChain
 from .prompt import interviewer_prompt, question_generator_prompt, evaluator_prompt
 from langchain_core.prompts import (
@@ -9,12 +11,28 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate,
 )
 from langchain.memory import ConversationBufferMemory
+from .constants import OPENAI_MODEL_NAME, GEMINI_MODEL_NAME
 
+
+def get_chat_model():
+    """Factory function to return appropriate chat model based on available API keys"""
+    if os.getenv("GOOGLE_API_KEY"):
+        return ChatGoogleGenerativeAI(
+            model=GEMINI_MODEL_NAME,
+            temperature=0,
+            google_api_key=os.getenv("GOOGLE_API_KEY")
+        )
+    return ChatOpenAI(
+        model=OPENAI_MODEL_NAME,
+        temperature=0,
+        openai_api_key=os.getenv("OPENAI_API_KEY")
+    )
+
+chat_model = get_chat_model()
 
 class InterViewer:
     def __init__(
         self,
-        model_name,
         guidelines,
         name,
         role,
@@ -23,11 +41,7 @@ class InterViewer:
         must_have_questions,
     ):
         self.name = name
-        self.model_name = model_name
-        self.llm = ChatOpenAI(
-            model=model_name,
-            temperature=0.5,
-        )
+        self.llm = get_chat_model()
         self.guidelines = guidelines
         self.role = role
         self.resume = resume
@@ -66,7 +80,7 @@ async def generate_questions(resume, role, role_description, model_name="gpt-4o-
         template=question_generator_prompt,
         input_variables=["role", "role_description", "resume_text"],
     )
-    llm = ChatOpenAI(model=model_name)
+    llm = get_chat_model()
     question_generator_chain = LLMChain(llm=llm, prompt=question_generator_template)
 
     guidelines = await question_generator_chain.arun(
@@ -82,7 +96,6 @@ async def evaluate_interview(
     interview,
     role,
     role_description,
-    model_name="gpt-4o-mini",
 ) -> str:
 
     evaluator_template = PromptTemplate(
@@ -90,7 +103,7 @@ async def evaluate_interview(
         input_variables=["role", "role_description", "interview"],
     )
 
-    llm = ChatOpenAI(model=model_name)
+    llm = get_chat_model()
 
     question_generator_chain = LLMChain(llm=llm, prompt=evaluator_template)
 

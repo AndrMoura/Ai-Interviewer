@@ -1,3 +1,4 @@
+import os
 import whisper
 import asyncio
 import torch
@@ -68,7 +69,6 @@ class AudioToText:
         """
         print(f"Loading and processing audio from: {audio_path}")
         audio = whisper.load_audio(audio_path)
-
         audio_chunks = self.chunk_audio(audio)
 
         full_transcript = ""
@@ -84,7 +84,7 @@ class AudioToText:
                 chunk_text = result.text
 
             full_transcript += chunk_text + " "
-
+        os.remove(audio_path)
         return full_transcript.strip()
 
 

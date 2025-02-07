@@ -4,7 +4,14 @@ DATABASE_NAME = os.environ.get("DATABASE_NAME", "app.db")
 ALGORITHM = os.environ.get("ALGORITHM", "HS256")
 SECRET_KEY = os.environ.get("SECRET_KEY", "your_default_secret_key")
 
-INTERVIEW_MODEL = os.environ.get("STT_MODEL", "gpt-4o-mini")
+OPENAI_MODEL_NAME = os.environ.get("OPENAI_MODEL_NAME", "gpt-4o-mini")
+GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.0-pro-exp-02-05")
+
+INTERVIEW_MODEL = (
+    os.environ.get("OPENAI_MODEL_NAME", "gpt-4o-mini") 
+    if os.environ.get("OPENAI_API_KEY") 
+    else os.environ.get("GEMINI_MODEL_NAME", "gemini-2.0-pro-exp-02-05")
+)
 INTERVIEW_NAME = os.environ.get("STT_MODEL", "Anna")
 STT_MODEL = os.environ.get("STT_MODEL", "tiny")
 TTS_MODEL = os.environ.get("TTS_MODEL", "tts_models/en/ljspeech/tacotron2-DDC")

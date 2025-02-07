@@ -32,7 +32,6 @@ from .constants import (
     STT_MODEL,
     TTS_MODEL,
     MULTILINGUAL_STT,
-    INTERVIEW_MODEL,
     INTERVIEW_NAME,
 )
 from .login import authenticate_user, create_access_token
@@ -106,6 +105,7 @@ async def generate_audio_response(
     audio = AudioSegment.from_wav(output_path)
     ogg_audio_buffer = io.BytesIO()
     audio.export(ogg_audio_buffer, format=file_format)
+    os.remove(output_path)
     return ogg_audio_buffer
 
 
@@ -135,8 +135,8 @@ async def handle_websocket_audio_stream(
     websocket: WebSocket,
     buffer: io.BytesIO,
     interviewer: InterViewer,
-    stt,
-    tts,
+    stt: AudioToText,
+    tts: TextToAudio,
     session_id,
 ):
     """Handle the WebSocket audio streaming and save when done."""
@@ -251,8 +251,8 @@ async def start_interview(
             role_description=role_description,
         )
         session_id = str(uuid.uuid4())
+        print("Interview name", INTERVIEW_NAME)
         interviewer = InterViewer(
-            INTERVIEW_MODEL,
             guidelines,
             INTERVIEW_NAME,
             role,
