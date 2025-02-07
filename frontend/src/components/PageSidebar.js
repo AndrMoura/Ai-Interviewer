@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from 'flowbite-react';
 import { HiUserAdd, HiArrowSmRight, HiLogout, HiDocumentText, HiOutlineClipboardList, HiMenuAlt2 } from 'react-icons/hi';
 import { useAuth } from '../hooks/useAuth';
@@ -7,6 +7,9 @@ import { useAuth } from '../hooks/useAuth';
 const PageSidebar = () => {
   const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  console.log(location.pathname, location.pathname.startsWith('/admin/interviews/'));
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return JSON.parse(localStorage.getItem('isCollapsed')) || false;
   });
@@ -51,21 +54,41 @@ const PageSidebar = () => {
         </div>
 
         <Sidebar.ItemGroup>
-          <Sidebar.Item as={Link} to="/settings" icon={HiArrowSmRight}>
+          <Sidebar.Item 
+            as={Link} 
+            to="/settings" 
+            icon={HiArrowSmRight}
+            className={/\/settings/.test(location.pathname) ? 'bg-gray-200' : ''}
+          >
             Start Interview
           </Sidebar.Item>
 
           {user?.role === 'admin' && (
             <>
-              <Sidebar.Item as={Link} to="/admin/create-role" icon={HiUserAdd}>
-              Create Role
+              <Sidebar.Item 
+                as={Link} 
+                to="/admin/create-role" 
+                icon={HiUserAdd}
+                className={/\/admin\/create-roles?/.test(location.pathname) ? 'bg-gray-200' : ''}
+              >
+                Create Role
               </Sidebar.Item>
 
-              <Sidebar.Item as={Link} to="/admin/roles" icon={HiOutlineClipboardList}>
+              <Sidebar.Item 
+                as={Link} 
+                to="/admin/roles" 
+                icon={HiOutlineClipboardList}
+                className={/\/admin\/roles?/.test(location.pathname) ? 'bg-gray-200' : ''}
+              >
                 Roles
               </Sidebar.Item>
 
-              <Sidebar.Item as={Link} to="/admin/interviews" icon={HiDocumentText}>
+              <Sidebar.Item 
+                as={Link} 
+                to="/admin/interviews" 
+                icon={HiDocumentText}
+                className={/\/admin\/interviews?/.test(location.pathname) ? 'bg-gray-200' : ''}
+              >
                 Rated Interviews
               </Sidebar.Item>
             </>
