@@ -9,7 +9,6 @@ const PageSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  console.log(location.pathname, location.pathname.startsWith('/admin/interviews/'));
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return JSON.parse(localStorage.getItem('isCollapsed')) || false;
   });

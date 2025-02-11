@@ -90,8 +90,7 @@ const InterviewSettingsPage = () => {
   };
 
   // Check if either the checkbox is checked or the Textarea has content
-  const isButtonEnabled = isPdf || portfolio.trim() !== '';
-
+  const isButtonEnabled = (isPdf && pdfFile) || portfolio.trim() !== '';
   return (
     <div className="flex h-screen bg-gray-100">
       <PageSidebar />

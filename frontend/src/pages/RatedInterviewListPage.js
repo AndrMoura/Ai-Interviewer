@@ -12,7 +12,7 @@ const RatedInterviewsPage = () => {
   const itemsPerPage = 9;
 
   const indexOfLastInterview = currentPage * itemsPerPage;
-  const indexOfFirstInterview = indexOfLastInterview - itemsPerPage;
+  const indexOfFirstInterview = (currentPage - 1) * itemsPerPage; 
   const currentInterviews = interviews.slice(indexOfFirstInterview, indexOfLastInterview);
   const totalPages = Math.ceil(interviews.length / itemsPerPage);
 
@@ -80,14 +80,14 @@ const RatedInterviewsPage = () => {
                 </div>
               ))}
             </div>
-
+            
             <div className="flex justify-center mt-4 mb-8">
               <Pagination
                 currentPage={currentPage}
                 onPageChange={handlePageChange}
                 totalPages={totalPages}
                 showIcons={true}
-                layout="table"
+                layout="pagination"
                 previousLabel="Previous"
                 nextLabel="Next"
               />
