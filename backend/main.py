@@ -5,8 +5,7 @@ import base64
 import uuid
 import logging
 import asyncio
-
-from pydub import AudioSegment
+import soundfile as sf
 from datetime import datetime
 from fastapi import (
     FastAPI,
@@ -30,11 +29,10 @@ from .constants import (
     SAVE_DIR,
     SECRET_KEY,
     STT_MODEL,
-    TTS_MODEL,
-    MULTILINGUAL_STT,
     INTERVIEW_NAME,
 )
 from .login import authenticate_user, create_access_token
+from kokoro import KPipeline
 from .db import (
     get_roles_db,
     create_role_to_db,
@@ -61,8 +59,8 @@ origins = [
 
 def initialize_tts_stt():
     """Initialize the Text-to-Speech model."""
-    tts = TextToAudio(TTS_MODEL, MULTILINGUAL_STT)
     stt = AudioToText(STT_MODEL)
+    tts = KPipeline(lang_code='a')
     return tts, stt
 
 
@@ -96,17 +94,20 @@ async def save_audio_buffer_to_file(buffer):
         buffer.seek(0)
         buffer.truncate(0)
 
+async def generate_audio_response(tts, text) -> io.BytesIO:
+    """
+    Generate an audio response from text using TTS and return as a BytesIO buffer.
+    """
+    def _generate():
+        gen = tts(text, voice="af_heart", speed=1.0)
+        audio = next(gen).audio
 
-async def generate_audio_response(
-    tts, text, ref_audio, file_format="mp3", output_path="question.wav"
-) -> io.BytesIO:
-    """Generate an audio from text using TTS and return as a BytesIO buffer."""
-    await tts.generate_audio_response(text, ref_audio=ref_audio, file_path=output_path)
-    audio = AudioSegment.from_wav(output_path)
-    ogg_audio_buffer = io.BytesIO()
-    audio.export(ogg_audio_buffer, format=file_format)
-    os.remove(output_path)
-    return ogg_audio_buffer
+        buffer = io.BytesIO()
+        sf.write(buffer, audio, samplerate=24000, format="WAV")
+        buffer.seek(0)
+        return buffer
+
+    return await asyncio.to_thread(_generate)
 
 
 async def process_interview_data(interviewer: InterViewer, session_id):
@@ -154,7 +155,7 @@ async def handle_websocket_audio_stream(
                 if webm_file_path:
                     model_question = await interviewer.generate_question(user_response=user_ans)
                     ogg_audio_buffer = await generate_audio_response(
-                        tts, model_question, ref_audio="sample.wav"
+                        tts, model_question
                     )
                     await websocket.send_bytes(ogg_audio_buffer.read())
                     logger.info("Sent audio response.")
@@ -176,6 +177,7 @@ async def handle_websocket_audio_stream(
 
 @app.websocket("/ws/audio")
 async def audio_stream(websocket: WebSocket):
+    interviewer = None
     await websocket.accept()
     session_id = None
     data = await websocket.receive()
@@ -184,11 +186,13 @@ async def audio_stream(websocket: WebSocket):
         if "session_id" in message:
             session_id = message.get("session_id")
 
-    interviewer = session_manager.get_session(session_id)
-    if not interviewer:
+    stored_data = session_manager.get_session(session_id)
+    if not stored_data:
         logger.error("Interviewer not found")
         await websocket.close()
         return
+    else:
+        interviewer = InterViewer.from_dict(stored_data)
 
     audio_buffer = io.BytesIO()
 
@@ -251,7 +255,6 @@ async def start_interview(
             role_description=role_description,
         )
         session_id = str(uuid.uuid4())
-        print("Interview name", INTERVIEW_NAME)
         interviewer = InterViewer(
             guidelines,
             INTERVIEW_NAME,
@@ -263,14 +266,8 @@ async def start_interview(
         first_question = await interviewer.generate_question("ask a question")
         interviewer.memory.clear()
         interviewer.memory.chat_memory.add_ai_message(first_question)
-        buffer = await generate_audio_response(
-            tts=tts,
-            text=first_question,
-            ref_audio="sample.wav",
-            output_path="output.wav",
-        )
-        session_manager.create_session(session_id, interviewer)
-
+        buffer = await generate_audio_response(tts, first_question)
+        session_manager.create_session(session_id, interviewer.to_dict())
         audio_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
         return JSONResponse(content={"audio_base64": audio_base64, "session_id": session_id})
     except Exception as e:

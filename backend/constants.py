@@ -1,11 +1,12 @@
 import os
 
 DATABASE_NAME = os.environ.get("DATABASE_NAME", "app.db")
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 ALGORITHM = os.environ.get("ALGORITHM", "HS256")
 SECRET_KEY = os.environ.get("SECRET_KEY", "your_default_secret_key")
 
 OPENAI_MODEL_NAME = os.environ.get("OPENAI_MODEL_NAME", "gpt-4o-mini")
-GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.0-pro-exp-02-05")
+GEMINI_MODEL_NAME = os.environ.get("GEMINI_MODEL_NAME", "gemini-2.0-flash-thinking-exp-01-21")
 
 INTERVIEW_MODEL = (
     os.environ.get("OPENAI_MODEL_NAME", "gpt-4o-mini") 

@@ -66,6 +66,33 @@ class InterViewer:
         self.interviewer = LLMChain(
             llm=self.llm, prompt=self.prompt, memory=self.memory, verbose=False
         )
+    
+    def to_dict(self):
+        """Serialize the InterViewer instance to a dict"""
+        return {
+            "guidelines": self.guidelines,
+            "name": self.name,
+            "role": self.role,
+            "resume": self.resume,
+            "role_description": self.role_description,
+            "must_have_questions": self.must_have_questions,
+            "first_msg": self.memory.chat_memory.messages[0].content,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        instance = cls(
+            guidelines=data.get("guidelines"),
+            name=data.get("name"),
+            role=data.get("role"),
+            resume=data.get("resume"),
+            role_description=data.get("role_description"),
+            must_have_questions=data.get("must_have_questions"),
+        )
+        chat_memory = data.get("first_msg")
+        if chat_memory:
+            instance.memory.chat_memory.add_ai_message(chat_memory)
+        return instance
 
     async def generate_question(self, user_response: str = "ask me a question") -> str:
         """generate the next interviewer question"""
@@ -74,7 +101,7 @@ class InterViewer:
         return next_question
 
 
-async def generate_questions(resume, role, role_description, model_name="gpt-4o-mini") -> str:
+async def generate_questions(resume, role, role_description) -> str:
 
     question_generator_template = PromptTemplate(
         template=question_generator_prompt,

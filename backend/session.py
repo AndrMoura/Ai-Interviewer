@@ -1,20 +1,16 @@
-from typing import Dict
-from .chat_model import InterViewer
-
+import redis
+import json
 
 class SessionManager:
-    """Manages interview sessions"""
+    def __init__(self, redis_url="redis://localhost:6379/0"):
+        self.client = redis.from_url(redis_url)
 
-    def __init__(self):
-        self.sessions: Dict[str, InterViewer] = {}
+    def create_session(self, session_id, data):
+        self.client.set(session_id, json.dumps(data))
 
-    def create_session(self, session_id: str, model: InterViewer):
-        # Initialize a unique InterViewer instance per session
-        self.sessions[session_id] = model
+    def get_session(self, session_id):
+        session = self.client.get(session_id)
+        return json.loads(session) if session else None
 
-    def get_session(self, session_id: str) -> InterViewer:
-        return self.sessions.get(session_id)
-
-    def remove_session(self, session_id: str):
-        if session_id in self.sessions:
-            del self.sessions[session_id]
+    def remove_session(self, session_id):
+        self.client.delete(session_id)
