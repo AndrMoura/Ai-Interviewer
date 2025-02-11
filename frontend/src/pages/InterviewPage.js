@@ -5,6 +5,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import PageSidebar from '../components/PageSidebar';
 import VoiceIndicator from '../components/VoiceIndicator';
 import CameraFeed from '../components/CameraFeed';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRotateRight } from '@fortawesome/free-solid-svg-icons';
+
 
 const InterviewPage = () => {
   const { state } = useLocation();  
@@ -29,6 +32,10 @@ const InterviewPage = () => {
   const navigate = useNavigate(); 
   const hasPageLoaded = useRef(false);
   const isSavingInterviewRef = useRef(isSavingInterview);
+
+  const handleResetTimer = () => {
+    setTimeLeft(60 * 10);
+  };
 
   useEffect(() => {
     isSavingInterviewRef.current = isSavingInterview;
@@ -310,8 +317,20 @@ const InterviewPage = () => {
             {/* Vertical Bar between Interviewer and Timer */}
             <div className="h-6 border-l-2 border-gray-400 mx-4"></div>
             
-            <div className="text-2xl font-semibold text-gray-700">
-              Time left: <span className="font-semibold">{formatTime(timeLeft)}</span>
+            <div className="flex items-center">
+              <div className="text-2xl font-semibold text-gray-700">
+                Time left: <span className="font-semibold">{formatTime(timeLeft)}</span>
+              </div>
+              <button
+                onClick={handleResetTimer}
+                className="ml-1 p-1 transition-all group"
+                title="Reset Timer"
+              >
+                <FontAwesomeIcon 
+                  icon={faRotateRight} 
+                  className="text-gray-600 transition-transform duration-300 group-hover:rotate-180" 
+                />
+              </button>
             </div>
           </div>
         </div>
