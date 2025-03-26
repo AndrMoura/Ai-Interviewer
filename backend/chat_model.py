@@ -22,12 +22,15 @@ def get_chat_model():
             temperature=0,
             google_api_key=os.getenv("GOOGLE_API_KEY")
         )
-    return ChatOpenAI(
-        model=OPENAI_MODEL_NAME,
-        temperature=0,
-        openai_api_key=os.getenv("OPENAI_API_KEY")
-    )
-
+    elif os.getenv("OPENAI_API_KEY"):
+        return ChatOpenAI(
+            model=OPENAI_MODEL_NAME,
+            temperature=0,
+            openai_api_key=os.getenv("OPENAI_API_KEY")
+        )
+    else:
+        raise Exception("No API keys found for chat model")
+    
 chat_model = get_chat_model()
 
 class InterViewer:

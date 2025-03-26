@@ -8,3 +8,4 @@ output.wav
 app.db
 saved_audio
 output.wav
+.pytest_cache

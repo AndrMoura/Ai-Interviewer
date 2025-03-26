@@ -13,4 +13,6 @@ class SessionManager:
         return json.loads(session) if session else None
 
     def remove_session(self, session_id):
+        if not self.client.exists(session_id):
+            raise ValueError(f"Session {session_id} does not exist.")
         self.client.delete(session_id)
